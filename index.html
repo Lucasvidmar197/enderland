@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tienda Oficial | Enderland</title>
+    <link rel="icon" type="image/jpeg" href="https://i.postimg.cc/pTZRVs1F/93db69b6-6f32-44ef-9e5a-ae199feadaa0.jpg">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #050505;
+            --card-bg: rgba(20, 20, 20, 0.6);
+            --primary: #a855f7;
+            --primary-glow: rgba(168, 85, 247, 0.5);
+            --primary-dark: #7e22ce;
+            --secondary: #ec4899; 
+            --success: #22c55e;
+            --success-glow: rgba(34, 197, 94, 0.4);
+            --danger: #ef4444;
+            --text-main: #ffffff;
+            --text-muted: #a1a1aa;
+            --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+            --glass-shine: rgba(255, 255, 255, 0.03);
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            scroll-behavior: smooth;
+        }
+
+        /* --- SCROLLBAR PERSONALIZADO --- */
+        /* Webkit (Chrome, Edge, Safari) */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(168, 85, 247, 0.3);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: 0.3s;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(168, 85, 247, 0.8);
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+        }
+
+        /* Firefox */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(168, 85, 247, 0.5) rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(168, 85, 247, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(236, 72, 153, 0.08) 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- UTILS --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .glass-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: var(--glass-border);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: var(--glass-border);
+            color: var(--text-main);
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .glass-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px var(--primary-glow);
+            border-color: var(--primary);
+        }
+
+        .glass-btn.primary {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+        .glass-btn.primary:hover {
+            background: var(--primary-dark);
+        }
+
+        /* --- NAVBAR --- */
+        .navbar {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 1000px;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 24px;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 1.2rem;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+        .nav-logo img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            transition: 0.3s;
+            position: relative;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: var(--text-main);
+        }
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary);
+            box-shadow: 0 0 8px var(--primary);
+        }
+
+        /* --- HERO --- */
+        .hero {
+            padding-top: 160px;
+            padding-bottom: 80px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .hero h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 4rem;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #fff 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 10px 30px rgba(168, 85, 247, 0.3);
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+
+        .nick-input-container {
+            max-width: 500px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .nick-input {
+            width: 100%;
+            padding: 20px 24px;
+            font-size: 1.1rem;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: var(--radius-lg);
+            color: #fff;
+            text-align: center;
+            transition: 0.3s;
+        }
+        .nick-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-glow);
+            background: rgba(0,0,0,0.6);
+        }
+
+        .server-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            padding: 6px 16px;
+            border-radius: 20px;
+            color: var(--success);
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* --- CATEGORIES --- */
+        .categories-wrapper {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 40px;
+        }
+        
+        .cat-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-muted);
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .cat-btn:hover, .cat-btn.active {
+            background: rgba(168, 85, 247, 0.1);
+            border-color: var(--primary);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
+        }
+        .cat-btn i { font-size: 1.1em; }
+
+        /* --- GRID --- */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            padding-bottom: 80px;
+        }
+
+        .product-card {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+        .product-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 40px -10px rgba(168, 85, 247, 0.3);
+        }
+        
+        .card-header {
+            height: 140px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            position: relative;
+        }
+        .card-header img {
+            max-height: 80%;
+            max-width: 80%;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+            transition: 0.3s;
+        }
+        .product-card:hover .card-header img {
+            transform: scale(1.1);
+        }
+
+        .card-body {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+        
+        .card-price {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 16px;
+            text-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+        }
+
+        .card-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            line-height: 1.5;
+            flex-grow: 1;
+        }
+
+        .card-actions {
+            margin-top: auto;
+        }
+
+        .btn-add-cart {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: #fff;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .btn-add-cart:hover {
+            background: var(--primary);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        /* --- CART FLOATING --- */
+        .cart-float {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+            transition: 0.3s;
+            z-index: 900;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .cart-float:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+        .cart-float i {
+            font-size: 1.5rem;
+            color: #fff;
+        }
+        .cart-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.75rem;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border: 2px solid var(--bg-color);
+        }
+
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+        }
+        .modal-box {
+            width: 90%;
+            max-width: 500px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 30px;
+            position: relative;
+            animation: slideUp 0.4s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .close-modal-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .close-modal-btn:hover { color: #fff; }
+
+        .cart-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .cart-item-info div:first-child { font-weight: 600; color: #fff; }
+        .cart-item-info small { color: var(--text-muted); }
+        .cart-item-price { font-weight: 700; color: var(--primary); }
+        
+        .cart-total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin: 20px 0;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        /* --- TOAST --- */
+        #toast-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: rgba(20, 20, 20, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px 24px;
+            border-radius: 50px;
+            color: #fff;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: fadeInToast 0.3s ease-out;
+        }
+        @keyframes fadeInToast {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- FOOTER --- */
+        footer {
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding: 60px 0 30px;
+            background: rgba(0,0,0,0.3);
+            margin-top: 80px;
+        }
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        .footer-col h4 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        .footer-col ul { list-style: none; }
+        .footer-col li { margin-bottom: 10px; }
+        .footer-col a { color: var(--text-muted); text-decoration: none; transition: 0.2s; }
+        .footer-col a:hover { color: var(--primary); }
+
+        /* --- CHATBOT --- */
+        .chat-float {
+            position: fixed;
+            bottom: 100px; /* Above cart */
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(15, 15, 15, 0.8);
+            border: 2px solid #a855f7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.6), 0 0 30px rgba(168, 85, 247, 0.4);
+            transition: all 0.3s ease;
+            z-index: 800;
+            backdrop-filter: blur(10px);
+        }
+        .chat-float:hover {
+            transform: scale(1.1);
+            background: var(--primary);
+            box-shadow: 0 0 30px var(--primary);
+        }
+        .chat-float i { font-size: 1.5rem; color: #fff; }
+
+        .chatbot-window {
+            position: fixed;
+            bottom: 100px;
+            right: 90px;
+            width: 350px;
+            height: 450px;
+            background: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--primary);
+            border-radius: 16px;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            z-index: 2000;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            overflow: hidden;
+            animation: slideInRight 0.3s ease;
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideOutRight {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(20px); }
+        }
+
+        .chatbot-header {
+            padding: 15px;
+            background: rgba(168, 85, 247, 0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .chatbot-messages {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chat-msg {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+        .chat-msg.bot {
+            align-self: flex-start;
+            background: rgba(255,255,255,0.1);
+            color: #ddd;
+            border-bottom-left-radius: 2px;
+        }
+        .chat-msg.user {
+            align-self: flex-end;
+            background: var(--primary);
+            color: #fff;
+            border-bottom-right-radius: 2px;
+        }
+
+        .chatbot-input-area {
+            padding: 15px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            gap: 10px;
+            background: rgba(0,0,0,0.2);
+        }
+        .chatbot-input-area input {
+            flex-grow: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 8px 15px;
+            color: #fff;
+            outline: none;
+        }
+        .chatbot-input-area input:focus { border-color: var(--primary); }
+        .chatbot-input-area button {
+            background: var(--primary);
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+        .chatbot-input-area button:hover { transform: scale(1.1); }
+
+        @media (max-width: 480px) {
+            .chatbot-window {
+                right: 20px;
+                left: 20px;
+                width: auto;
+                bottom: 110px;
+            }
+        }
+
+        /* --- RESPONSIVE & SIDEBAR --- */
+        .hamburger-btn {
+            display: none;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Clase para mostrar el banner */
+        #cookie-consent-banner.visible {
+            transform: translateX(-50%) translateY(0) !important;
+        }
+
+        .mobile-sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 280px;
+            height: 100%;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 10000;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 1px solid rgba(255,255,255,0.1);
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+        }
+        .mobile-sidebar.active {
+            transform: translateX(0);
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-header h3 { margin: 0; color: var(--primary); font-family: 'Montserrat', sans-serif; }
+        .close-sidebar-btn { background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; }
+
+        .sidebar-content {
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .mobile-profile-widget {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 15px;
+            color: #ddd;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: 0.2s;
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+        .sidebar-link:hover {
+            background: rgba(168, 85, 247, 0.1);
+            color: #fff;
+        }
+        .sidebar-link i { width: 25px; text-align: center; }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .navbar { width: 95%; padding: 15px; justify-content: space-between; }
+            .nav-logo span { font-size: 1rem; }
+            .products-grid { grid-template-columns: 1fr; }
+            
+            .nav-links { display: none; } /* Hide desktop menu */
+            .hamburger-btn { display: block; } /* Show mobile trigger */
+            
+            .hero { padding-top: 120px; }
+            .categories-wrapper { gap: 8px; }
+            .cat-btn { padding: 8px 12px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN OVERLAY -->
+    <div id="login-overlay" class="modal-overlay active" style="display: flex; opacity: 1; background: #000; z-index: 9999;">
+        <div class="glass-panel modal-box" style="text-align: center; max-width: 400px; animation: none;">
+            <div style="margin-bottom: 20px;">
+                <img src="https://i.postimg.cc/pTZRVs1F/93db69b6-6f32-44ef-9e5a-ae199feadaa0.jpg" alt="Logo" style="width: 80px; border-radius: 50%; border: 2px solid var(--primary); box-shadow: 0 0 20px var(--primary-glow);">
+            </div>
+            <h2 style="margin-bottom: 10px; font-family: 'Montserrat', sans-serif;">BIENVENIDO</h2>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Ingresa tu nombre de usuario para continuar.</p>
+            
+            <div class="login-avatar" id="avatar-preview" style="background-image: url('https://mc-heads.net/avatar/Steve/100'); background-size: cover; background-position: center; border-radius: 10px; width: 100px; height: 100px; margin: 0 auto 20px auto; border: 2px solid rgba(255,255,255,0.1); box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);"></div>
+            
+            <input type="text" id="nick-input" class="nick-input" placeholder="Nombre de Minecraft..." oninput="updateSkin()" onkeypress="if(event.key === 'Enter') submitLogin()" style="text-align: center; font-size: 1.1rem; margin-bottom: 20px;">
+            
+            <button class="glass-btn primary" style="width: 100%; justify-content: center; font-size: 1.1rem; padding: 12px;" onclick="submitLogin()">
+                CONTINUAR <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- TERMS OVERLAY -->
+    <div id="terms-overlay" class="modal-overlay" style="display: none; background: rgba(0,0,0,0.95); z-index: 9998;">
+        <div class="glass-panel modal-box" style="max-width: 600px;">
+            <h2 style="margin-bottom: 20px; text-align: center; color: var(--primary);">Términos y Condiciones</h2>
+            <div style="height: 350px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 8px; margin-bottom: 20px; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; border: 1px solid rgba(255,255,255,0.05);">
+                <h4 style="color: #fff; margin-bottom: 10px;">1. Política de Reembolsos</h4>
+                <p style="margin-bottom: 15px;">Todas las compras realizadas en la tienda de Enderland son <strong>finales y no reembolsables</strong>. Al realizar una compra, renuncias a tu derecho de desistimiento una vez que el servicio digital ha comenzado a prestarse. Cualquier intento de chargeback (devolución de cargo) resultará en un baneo permanente e inapelable de nuestra red.</p>
+                
+                <h4 style="color: #fff; margin-bottom: 10px;">2. Responsabilidad de la Cuenta</h4>
+                <p style="margin-bottom: 15px;">Al comprar, confirmas que eres el titular legítimo de la cuenta de pago o que cuentas con el permiso explícito del titular. Enderland no se hace responsable por compras no autorizadas realizadas desde tu dispositivo.</p>
+                
+                <h4 style="color: #fff; margin-bottom: 10px;">3. Entrega de Productos</h4>
+                <p style="margin-bottom: 15px;">La entrega de rangos, kits y llaves suele ser automática (1-15 minutos). Sin embargo, en ocasiones puede haber retrasos técnicos. Si no recibes tu producto en 1 hora, debes abrir un ticket en nuestro Discord con tu comprobante de pago.</p>
+                
+                <h4 style="color: #fff; margin-bottom: 10px;">4. Modificaciones</h4>
+                <p style="margin-bottom: 15px;">Nos reservamos el derecho de modificar los precios, el contenido de los rangos o los términos del servicio en cualquier momento sin previo aviso. Es tu responsabilidad revisar estos términos periódicamente.</p>
+                
+                <h4 style="color: #fff; margin-bottom: 10px;">5. Cumplimiento con Mojang</h4>
+                <p>Enderland no está afiliado con Mojang AB. Minecraft es una marca registrada de Mojang AB. Cualquier problema con el servidor debe ser tratado directamente con nuestro soporte, no con Mojang.</p>
+            </div>
+            
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px;">
+                <input type="checkbox" id="accept-terms-check" style="width: 18px; height: 18px; cursor: pointer;">
+                <label for="accept-terms-check" style="cursor: pointer; color: #fff; font-size: 0.9rem;">He leído y acepto los términos y condiciones.</label>
+            </div>
+
+            <button id="btn-enter-shop" class="glass-btn primary" style="width: 100%; justify-content: center; opacity: 0.5; pointer-events: none;" onclick="enterShop()">
+                ENTRAR A LA TIENDA
+            </button>
+            
+            <script>
+                document.getElementById('accept-terms-check').addEventListener('change', function() {
+                    const btn = document.getElementById('btn-enter-shop');
+                    if(this.checked) {
+                        btn.style.opacity = '1';
+                        btn.style.pointerEvents = 'auto';
+                    } else {
+                        btn.style.opacity = '0.5';
+                        btn.style.pointerEvents = 'none';
+                    }
+                });
+            </script>
+        </div>
+    </div>
+
+    <!-- KIT PREVIEW OVERLAY -->
+    <div id="kit-preview-overlay" class="modal-overlay" style="display: none; z-index: 10000;">
+        <div class="glass-panel modal-box" style="max-width: 500px; text-align: left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 id="kit-preview-title" style="margin:0; color:var(--primary);">Contenido del Kit</h3>
+                <i class="fas fa-times" style="cursor:pointer; font-size:1.2rem;" onclick="closeKitPreview()"></i>
+            </div>
+            <div id="kit-preview-content" class="custom-scroll" style="max-height: 400px; overflow-y: auto; font-size: 0.9rem; line-height: 1.6; color: #ddd; padding-right:10px;">
+                <!-- Content injected by JS -->
+            </div>
+        </div>
+    </div>
+
+
+    <!-- NAVBAR -->
+    <nav class="navbar glass-panel">
+        <div class="nav-logo">
+            <img src="https://i.postimg.cc/pTZRVs1F/93db69b6-6f32-44ef-9e5a-ae199feadaa0.jpg" alt="Logo">
+            <span>Enderland</span>
+        </div>
+        
+        <!-- Hamburger Button -->
+        <button class="hamburger-btn" onclick="toggleMobileSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <div class="nav-links">
+             <!-- Profile Widget -->
+            <div id="nav-profile" style="display: flex; align-items: center; gap: 10px; margin-right: 20px; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 20px;">
+                <div id="sidebar-avatar" onclick="showFullSkin()" style="width: 32px; height: 32px; border-radius: 50%; background-size: cover; background-color: #333; background-image: url('https://minotar.net/helm/Steve/32.png'); cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"></div>
+                <span id="sidebar-username" style="font-weight: 600; font-size: 0.9rem;">Invitado</span>
+                <button onclick="showFullSkin()" style="background: none; border: none; color: var(--primary); cursor: pointer;" title="Ver Skin 3D"><i class="fas fa-street-view"></i></button>
+            </div>
+
+            <a href="#" class="nav-link active" onclick="resetNavigation(); return false;">Inicio</a>
+            <a href="#" class="nav-link" onclick="openCart(); return false;">Carrito</a>
+        </div>
+    </nav>
+
+    <div id="skin-viewer-overlay" class="modal-overlay" style="display: none; z-index: 10001; background: rgba(0,0,0,0.95);">
+        <div class="glass-panel modal-box" style="max-width: 400px; text-align: center; position: relative;">
+            <i class="fas fa-times" style="position: absolute; top: 15px; right: 15px; cursor: pointer; color: #fff; font-size: 1.2rem;" onclick="closeSkinViewer()"></i>
+            <h3 style="margin-bottom: 20px; color: var(--primary);">Tu Skin</h3>
+            <div id="skin-render-container" style="width: 100%; height: 400px; display: flex; align-items: center; justify-content: center;">
+                <!-- IMG injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MOBILE SIDEBAR -->
+    <div id="mobile-sidebar" class="mobile-sidebar">
+        <div class="sidebar-header">
+            <h3>MENÚ</h3>
+            <button class="close-sidebar-btn" onclick="toggleMobileSidebar()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="sidebar-content">
+            <!-- Profile Info Mobile -->
+            <div class="mobile-profile-widget" onclick="showFullSkin()">
+                <div id="mobile-sidebar-avatar" style="width: 50px; height: 50px; border-radius: 50%; background-size: cover; background-color: #333; background-image: url('https://minotar.net/helm/Steve/50.png'); border: 2px solid var(--primary);"></div>
+                <div style="display:flex; flex-direction:column;">
+                    <span id="mobile-sidebar-username" style="font-weight: 700; color: #fff;">Invitado</span>
+                    <span style="font-size: 0.8rem; color: var(--success);">Online</span>
+                </div>
+            </div>
+
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
+
+            <a href="#" class="sidebar-link" onclick="resetNavigation(); toggleMobileSidebar(); return false;"><i class="fas fa-home"></i> Inicio</a>
+            <a href="#" class="sidebar-link" onclick="openCart(); toggleMobileSidebar(); return false;"><i class="fas fa-shopping-cart"></i> Carrito</a>
+            
+            <div style="margin-top: 20px; margin-bottom: 10px; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Categorías</div>
+            
+            <a href="#section-ranks" class="sidebar-link" onclick="document.getElementById('section-ranks').scrollIntoView({behavior: 'smooth'}); toggleMobileSidebar();"><i class="fas fa-crown" style="color: gold;"></i> Rangos</a>
+            <a href="#section-kits" class="sidebar-link" onclick="document.getElementById('section-kits').scrollIntoView({behavior: 'smooth'}); toggleMobileSidebar();"><i class="fas fa-box-open" style="color: var(--secondary);"></i> Kits</a>
+            <a href="#section-unban" class="sidebar-link" onclick="document.getElementById('section-unban').scrollIntoView({behavior: 'smooth'}); toggleMobileSidebar();"><i class="fas fa-user-lock" style="color: var(--danger);"></i> Desbaneos</a>
+
+            <div style="margin-top: auto; padding-top: 30px; text-align: center;">
+                 <p style="font-size: 0.8rem; color: #666;">Enderland Network &copy; 2026</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN WRAPPER -->
+    <div class="main-wrapper" style="position: relative; z-index: 10;">
+    
+    <!-- MAIN SCROLL CONTAINER -->
+    <div id="scroll-container" style="height: 100vh; overflow-y: auto; overflow-x: hidden; scroll-behavior: smooth;">
+    
+    <!-- MAIN CONTAINER -->
+    <div class="container">
+        
+        <!-- HERO SECTION -->
+        <header class="hero" style="margin-top: 80px; margin-bottom: 60px; text-align: center;">
+            <div class="server-status" style="display: inline-flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
+                <span class="status-dot online"></span>
+                <span id="server-online-text" style="font-size: 0.9rem; font-weight: 600; letter-spacing: 0.5px;">ONLINE</span>
+            </div>
+            
+            <h1 class="glitch" data-text="TIENDA OFICIAL" style="font-size: 4rem; font-weight: 900; letter-spacing: -2px; text-shadow: 0 0 30px rgba(168, 85, 247, 0.6); margin-bottom: 10px;">TIENDA OFICIAL</h1>
+            <p style="font-size: 1.2rem; color: var(--text-muted); max-width: 600px; margin: 0 auto;">Mejora tu experiencia en Enderland. Rangos, Kits y más.</p>
+        </header>
+
+        <!-- CATEGORIES (NAVIGATION) -->
+        <div id="category-buttons" class="categories-wrapper">
+            <button class="cat-btn" onclick="document.getElementById('section-ranks').scrollIntoView({behavior: 'smooth'})"><i class="fas fa-crown"></i> Rangos</button>
+            <button class="cat-btn" onclick="document.getElementById('section-kits').scrollIntoView({behavior: 'smooth'})"><i class="fas fa-box-open"></i> Kits</button>
+            <button class="cat-btn" onclick="document.getElementById('section-unban').scrollIntoView({behavior: 'smooth'})"><i class="fas fa-user-lock"></i> Desbaneos</button>
+        </div>
+
+        <!-- SECTIONS -->
+        <section id="section-ranks" style="margin-bottom: 80px;">
+            <h2 style="margin-bottom: 30px; font-size: 1.8rem; border-left: 4px solid var(--primary); padding-left: 15px;">Rangos</h2>
+            
+            <div id="semi-anarquico" style="margin-bottom: 40px;">
+                <h3 style="color: var(--primary); font-family: 'Montserrat', sans-serif; border-bottom: 1px solid rgba(168, 85, 247, 0.3); padding-bottom: 10px; margin-bottom: 20px;">Semi Anárquico</h3>
+                <div class="grid products-grid"></div>
+            </div>
+
+            <div id="vanilla-rangos" style="margin-bottom: 40px;">
+                <h3 style="color: var(--secondary); font-family: 'Montserrat', sans-serif; border-bottom: 1px solid rgba(236, 72, 153, 0.3); padding-bottom: 10px; margin-bottom: 20px;">Survival Vanilla</h3>
+                <div class="grid products-grid"></div>
+            </div>
+
+            <div id="arena-rangos" style="margin-bottom: 40px; display: none;">
+                <h3 style="color: #ef4444; font-family: 'Montserrat', sans-serif; border-bottom: 1px solid rgba(239, 68, 68, 0.3); padding-bottom: 10px; margin-bottom: 20px;">Arena PVP</h3>
+                <div class="grid products-grid"></div>
+            </div>
+        </section>
+
+        <section id="section-kits" style="margin-bottom: 80px;">
+            <h2 style="margin-bottom: 30px; font-size: 1.8rem; border-left: 4px solid var(--secondary); padding-left: 15px;">Kits</h2>
+            
+            <div id="kits-container" style="margin-bottom: 40px;">
+                <h3 style="color: var(--text-main); font-family: 'Montserrat', sans-serif; border-bottom: 1px solid rgba(255, 255, 255, 0.3); padding-bottom: 10px; margin-bottom: 20px;">Vanilla y Semi Anárquico</h3>
+                <div class="grid products-grid"></div>
+            </div>
+
+            <div id="arena-kits" style="margin-bottom: 40px; display: none;">
+                <h3 style="color: #ef4444; font-family: 'Montserrat', sans-serif; border-bottom: 1px solid rgba(239, 68, 68, 0.3); padding-bottom: 10px; margin-bottom: 20px;">Arena PVP</h3>
+                <div class="grid products-grid"></div>
+            </div>
+        </section>
+
+        <!-- KEYS SECTION REMOVED -->
+        <!-- <section id="section-keys" style="margin-bottom: 80px; display: none;"> ... </section> -->
+
+        <section id="section-unban" style="margin-bottom: 80px;">
+            <h2 style="margin-bottom: 30px; font-size: 1.8rem; border-left: 4px solid var(--danger); padding-left: 15px;">Desbaneos</h2>
+            <div id="grid-unban" class="products-grid">
+                <!-- Static Unban Items (or injected) -->
+                <div class="glass-panel product-card">
+                    <div class="card-header">
+                        <!-- UPDATE: Usar un icono de FontAwesome grande o imagen fiable -->
+                        <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.1);">
+                            <i class="fas fa-user-slash" style="font-size: 4rem; color: var(--danger); filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.5));"></i>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Desbaneo Oficial</h3>
+                        <div class="card-desc">
+                            <p style="font-size: 0.85rem; margin-bottom: 10px;">Recupera el acceso al servidor. Selecciona la duración de tu sanción.</p>
+                            
+                            <label style="display:block; margin-bottom:5px; font-size: 0.8rem; color: #fff;">Usuario Sancionado:</label>
+                            <input type="text" id="unban-user" class="nick-input" style="padding: 10px; font-size: 0.9rem; margin-bottom: 15px;" placeholder="Ej: Steve">
+                            
+                            <label style="display:block; margin-bottom:5px; font-size: 0.8rem; color: #fff;">Duración del Desbaneo:</label>
+                            <select id="unban-duration" class="nick-input" style="padding: 10px; font-size: 0.9rem; margin-bottom: 15px; text-align: left;">
+                                <option value="1d" data-price="2.00">1 Día ($2.00 USD)</option>
+                                <option value="3d" data-price="3.00">3 Días ($3.00 USD)</option>
+                                <option value="1w" data-price="5.00">1 Semana ($5.00 USD)</option>
+                                <option value="1m" data-price="8.00">1 Mes ($8.00 USD)</option>
+                                <option value="perm" data-price="15.00">Permanente ($15.00 USD)</option>
+                            </select>
+
+                            <label style="display:block; margin-bottom:5px; font-size: 0.8rem; color: #fff;">Plataforma:</label>
+                            <select id="unban-platform" class="nick-input" style="padding: 10px; font-size: 0.9rem; text-align: left;">
+                                <option value="Minecraft">Minecraft (Java/Bedrock)</option>
+                                <option value="Discord">Discord</option>
+                            </select>
+                        </div>
+                        <div class="card-actions">
+                             <button class="btn-add-cart" onclick="addUnbanToCart()" style="background: var(--danger); border-color: var(--danger);">
+                                <i class="fas fa-shopping-cart"></i> COMPRAR DESBANEO
+                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- FOOTER -->
+    <footer style="background: linear-gradient(to top, #020202 0%, #0a0a0a 100%); border-top: 1px solid rgba(168, 85, 247, 0.15); padding: 80px 0 40px; position: relative; overflow: hidden;">
+        <!-- Glow effect background -->
+        <div style="position: absolute; top: -100px; left: 50%; transform: translateX(-50%); width: 600px; height: 300px; background: radial-gradient(circle, rgba(168,85,247,0.08) 0%, transparent 70%); pointer-events: none;"></div>
+
+        <div class="container">
+            <div class="footer-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 50px; margin-bottom: 60px; position: relative; z-index: 2;">
+                
+                <!-- COL 1: MARCA -->
+                <div class="footer-col" style="display: flex; flex-direction: column; align-items: flex-start;">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                        <img src="https://i.postimg.cc/pTZRVs1F/93db69b6-6f32-44ef-9e5a-ae199feadaa0.jpg" alt="Enderland Logo" style="width: 55px; height: 55px; border-radius: 50%; border: 2px solid var(--primary); box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);">
+                        <span style="font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 1.5rem; color: #fff; letter-spacing: -1px;">ENDERLAND</span>
+                    </div>
+                    <p style="color: #a1a1aa; font-size: 0.95rem; line-height: 1.6; margin-bottom: 25px;">
+                        La mejor experiencia de Minecraft en Colombia. Comunidad, estabilidad y diversión asegurada en cada bloque.
+                    </p>
+                    <div style="display: inline-flex; align-items: center; gap: 10px; background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.15); padding: 8px 16px; border-radius: 30px;">
+                        <span style="font-size: 1.2rem;">🇨🇴</span>
+                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--success); letter-spacing: 0.5px;">Hosteado en Colombia</span>
+                    </div>
+                </div>
+
+                <!-- COL 2: MODALIDADES -->
+                <div class="footer-col">
+                    <h4 style="color: #fff; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; margin-bottom: 25px; padding-bottom: 10px; border-bottom: 2px solid var(--primary); display: inline-block;">MODALIDADES</h4>
+                    <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 12px;">
+                        <li><a href="#" style="color: #d4d4d8; text-decoration: none; font-weight: 500; transition: 0.3s; display: flex; align-items: center; gap: 8px;" onmouseover="this.style.color='var(--primary)'; this.style.transform='translateX(5px)'" onmouseout="this.style.color='#d4d4d8'; this.style.transform='translateX(0)'"><i class="fas fa-circle" style="font-size: 0.4rem; color: var(--primary);"></i> Semi Anárquico</a></li>
+                        <li><a href="#" style="color: #d4d4d8; text-decoration: none; font-weight: 500; transition: 0.3s; display: flex; align-items: center; gap: 8px;" onmouseover="this.style.color='var(--primary)'; this.style.transform='translateX(5px)'" onmouseout="this.style.color='#d4d4d8'; this.style.transform='translateX(0)'"><i class="fas fa-circle" style="font-size: 0.4rem; color: var(--primary);"></i> Vanilla</a></li>
+                        <li><a href="#" style="color: #d4d4d8; text-decoration: none; font-weight: 500; transition: 0.3s; display: flex; align-items: center; gap: 8px;" onmouseover="this.style.color='var(--primary)'; this.style.transform='translateX(5px)'" onmouseout="this.style.color='#d4d4d8'; this.style.transform='translateX(0)'"><i class="fas fa-circle" style="font-size: 0.4rem; color: var(--primary);"></i> SurvivalOP</a></li>
+                    </ul>
+                </div>
+
+                <!-- COL 3: LEGAL -->
+                <div class="footer-col">
+                    <h4 style="color: #fff; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; margin-bottom: 25px; padding-bottom: 10px; border-bottom: 2px solid var(--primary); display: inline-block;">LEGAL</h4>
+                    <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 12px;">
+                        <li><a href="#" onclick="openPrivacyModal(); return false;" style="color: #a1a1aa; text-decoration: none; transition: 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">Términos y Condiciones</a></li>
+                        <li><a href="#" onclick="openPrivacyModal(); return false;" style="color: #a1a1aa; text-decoration: none; transition: 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">Política de Privacidad</a></li>
+                    </ul>
+                </div>
+
+                <!-- COL 4: COMUNIDAD -->
+                <div class="footer-col">
+                    <h4 style="color: #fff; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; margin-bottom: 25px; padding-bottom: 10px; border-bottom: 2px solid #5865F2; display: inline-block;">COMUNIDAD</h4>
+                    <p style="color: #a1a1aa; font-size: 0.9rem; margin-bottom: 20px;">Únete a nuestro servidor de Discord para soporte, sorteos y noticias.</p>
+                    <a href="https://discord.gg/wmS4Ztg8Af" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 12px; background: #5865F2; color: white; text-decoration: none; padding: 14px 24px; border-radius: 12px; font-weight: 700; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(88, 101, 242, 0.25);" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 25px rgba(88, 101, 242, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(88, 101, 242, 0.25)'">
+                        <i class="fab fa-discord" style="font-size: 1.4rem;"></i>
+                        Únete al Discord
+                    </a>
+                </div>
+            </div>
+
+            <!-- COPYRIGHT -->
+            <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 30px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px;">
+                <p style="color: #71717a; font-size: 0.9rem;">
+                    Copyright &copy; 2026 <span style="color: #fff; font-weight: 600;">Enderland Network</span>. Todos los derechos reservados.
+                </p>
+                <p style="color: #52525b; font-size: 0.8rem;">
+                    No estamos afiliados con Mojang AB.
+                </p>
+                <a href="https://polagodd.com/" target="_blank" style="color: #27272a; font-size: 0.75rem; text-decoration: none; margin-top: 10px; transition: all 0.3s ease; font-weight: 500;" onmouseover="this.style.color='#a855f7'; this.style.transform='translateY(-2px)'" onmouseout="this.style.color='#27272a'; this.style.transform='translateY(0)'">
+                    Desarrollado por <span style="font-weight: 700;">polagodd</span>
+                </a>
+            </div>
+        </div>
+    </footer>
+    
+    </div> <!-- END SCROLL CONTAINER -->
+
+    <!-- FLOAT CART -->
+    <div id="cart-float" class="cart-float" onclick="openCart()">
+        <i class="fas fa-shopping-cart"></i>
+        <div id="cart-count" class="cart-badge">0</div>
+    </div>
+
+    <!-- CART MODAL -->
+    <div id="cart-modal" class="modal-overlay">
+        <div class="glass-panel modal-box">
+            <div class="modal-header">
+                <h3>Tu Carrito <span id="cart-username" style="color: var(--primary); font-size: 0.9em;"></span></h3>
+                <button class="close-modal-btn" onclick="closeModal('cart-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div id="cart-items-container">
+                <!-- Cart items injected here -->
+                <p style="text-align: center; color: var(--text-muted);">Tu carrito está vacío.</p>
+            </div>
+
+            <div class="cart-total-row">
+                <span>Total</span>
+                <span>$<span id="cart-total-price">0.00</span></span>
+            </div>
+
+            <!-- Coupon Section -->
+            <div style="margin-bottom: 20px;">
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="cart-coupon-input" placeholder="Código de cupón" class="nick-input" style="padding: 10px; text-align: left;">
+                    <button onclick="applyCouponFromCart()" class="glass-btn primary" style="padding: 10px 15px;"><i class="fas fa-check"></i></button>
+                </div>
+                <small id="cart-coupon-status" style="display: block; margin-top: 5px; color: var(--text-muted);"></small>
+            </div>
+
+            <!-- Discord Username Input (Restored) -->
+            <div style="margin-bottom: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                <label style="display:block; margin-bottom:5px; font-size: 0.9rem; color: #fff;">Usuario de Discord:</label>
+                <input type="text" id="discord-user-input" placeholder="Ej: usuario#1234 o usuario" class="nick-input" style="padding: 10px; text-align: left; width: 100%;">
+                <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 5px;">Te contactaremos por Discord si hay algún problema.</small>
+            </div>
+
+            <!-- Gift Section -->
+            <div style="margin-bottom: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-muted);">
+                    <input type="checkbox" id="is-gift" onchange="toggleGiftInput()">
+                    ¿Es un regalo para otro jugador?
+                </label>
+                <input type="text" id="gift-nickname" placeholder="Nick del destinatario" class="nick-input" style="display: none; margin-top: 10px; padding: 10px; text-align: left;">
+            </div>
+
+            <button id="checkout-btn" class="glass-btn primary" style="width: 100%; justify-content: center;" onclick="checkout()">
+                Finalizar Compra <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- PRIVACY / TERMS MODAL (Placeholder for existing logic) -->
+    <div id="privacy-modal" class="modal-overlay">
+        <div class="glass-panel modal-box">
+            <div class="modal-header">
+                <h3>Políticas</h3>
+                <button class="close-modal-btn" onclick="closeModal('privacy-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="color: var(--text-muted); line-height: 1.6;">
+                <p>Aquí van los términos y condiciones...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHATBOT FLOATING BUTTON -->
+    <div id="chatbot-float" class="chat-float" onclick="toggleChat()">
+        <i class="fas fa-robot"></i>
+    </div>
+
+    <!-- CHATBOT WINDOW -->
+    <div id="chatbot-window" class="chatbot-window">
+        <div class="chatbot-header">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="status-dot online" style="background: #22c55e; box-shadow: 0 0 8px #22c55e;"></div>
+                <span>EnderBot 🤖</span>
+            </div>
+            <button onclick="toggleChat()" style="background:none; border:none; color:#fff; cursor:pointer;"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="chatbot-messages" class="chatbot-messages">
+            <div class="chat-msg bot">
+                ¡Hola! Soy EnderBot 🤖 ¿En qué puedo ayudarte hoy en Enderland?
+            </div>
+        </div>
+        <div class="chatbot-input-area">
+            <input type="text" id="chatbot-input" placeholder="Escribe tu mensaje..." onkeypress="handleChatInput(event)">
+            <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- COOKIE BANNER -->
+    <div id="cookie-consent-banner" class="glass-panel" style="position: fixed; bottom: 20px; left: 20px; max-width: 400px; padding: 20px; z-index: 5000; display: none; transform: translateY(100px); transition: 0.5s;">
+        <h4 style="margin-bottom: 10px; color: #fff;">Cookies</h4>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px;">
+            Usamos cookies para mejorar tu experiencia.
+        </p>
+        <div style="display: flex; gap: 10px;">
+            <button id="cookie-accept-btn" class="glass-btn primary" style="font-size: 0.8rem; padding: 8px 16px;">Aceptar</button>
+            <button id="cookie-reject-btn" class="glass-btn" style="font-size: 0.8rem; padding: 8px 16px;">Rechazar</button>
+        </div>
+        <a href="#" id="cookie-terms-link" style="display: block; margin-top: 10px; font-size: 0.8rem; color: var(--text-muted);">Leer más</a>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
+
+    <!-- Hidden Elements required by JS logic if they exist in script.js but not UI -->
+    <!-- Sidebar elements that script.js tries to update -->
+    <div style="display: none;">
+        <span id="sidebar-username"></span>
+        <div id="sidebar-avatar"></div>
+        <div id="terms-overlay"></div> <!-- Used for intro animation -->
+        <div id="scroll-container"></div>
+        <div id="btn-inicio"></div>
+    </div>
+
+    <!-- MODALS EXTRA (SKIN, KIT, FAQ) -->
+    <div id="skin-modal" class="modal-overlay" style="z-index: 10001;">
+        <div class="glass-panel modal-box" style="text-align: center; max-width: 500px;">
+            <div class="modal-header">
+                <h3>Skin de <span id="skin-username-display" style="color: var(--primary);"></span></h3>
+                <button class="close-modal-btn" onclick="closeModal('skin-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="skin-viewer-container" style="width: 100%; height: 400px; background: rgba(0,0,0,0.3); border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; overflow: hidden;">
+                <canvas id="skin_container"></canvas>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Arrastra para rotar • Rueda para zoom</p>
+        </div>
+    </div>
+
+    <div id="kit-modal" class="modal-overlay" style="z-index: 10001;">
+        <div class="glass-panel modal-box">
+            <div class="modal-header">
+                <h3 id="kit-modal-title">Detalles del Kit</h3>
+                <button class="close-modal-btn" onclick="closeModal('kit-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <img id="kit-modal-img" src="" style="width: 100%; border-radius: 8px; margin-bottom: 20px; display: none;">
+            <ul id="kit-modal-list" style="list-style: none; color: var(--text-muted); line-height: 1.6;"></ul>
+        </div>
+    </div>
+    
+    <div id="faq-modal" class="modal-overlay" style="z-index: 10001;">
+         <div class="glass-panel modal-box">
+            <div class="modal-header">
+                <h3 id="faq-title">Pregunta Frecuente</h3>
+                <button class="close-modal-btn" onclick="closeModal('faq-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <p id="faq-body" style="color: var(--text-muted); line-height: 1.6;"></p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://bs-community.github.io/skinview3d/js/skinview3d.bundle.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>

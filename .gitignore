@@ -1,0 +1,10 @@
+# Carpetas pesadas que Render instala solo
+node_modules/
+bot/node_modules/
+
+# Archivos secretos (Tus llaves están seguras en Render)
+.env
+
+# Basura del sistema
+.DS_Store
+Thumbs.db

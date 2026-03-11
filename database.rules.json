@@ -1,0 +1,33 @@
+{
+  "rules": {
+    ".read": true,
+    "admins": {
+      ".write": true
+    },
+    "visits": {
+      ".write": true
+    },
+    "catalog": {
+      ".write": true
+    },
+    "offers": {
+      ".write": true
+    },
+    "coupons": {
+      ".write": true
+    },
+    "recent_purchases": {
+      ".write": true,
+      ".indexOn": ["createdAt", "ip"]
+    },
+    "ip_orders": {
+      ".write": true
+    },
+    "system_logs": {
+      ".write": true
+    },
+    "settings": {
+      ".write": true
+    }
+  }
+}
