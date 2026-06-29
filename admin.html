@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enderland | Admin Dashboard</title>
+    <link rel="icon" type="image/jpeg" href="https://i.postimg.cc/pTZRVs1F/93db69b6-6f32-44ef-9e5a-ae199feadaa0.jpg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0b0b0b;
+            --card-bg: rgba(20, 20, 20, 0.6);
+            --primary: #a855f7;
+            --primary-glow: rgba(168, 85, 247, 0.4);
+            --success: #22c55e;
+            --success-glow: rgba(34, 197, 94, 0.4);
+            --danger: #ef4444;
+            --text-main: #ffffff;
+            --text-muted: #a1a1aa;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(168, 85, 247, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(34, 197, 94, 0.05) 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* --- UTILS --- */
+        .glass-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: var(--glass-border);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        h2, h3, h4 {
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        /* --- LOGIN SCREEN --- */
+        .login-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            background: #000;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 420px;
+            padding: 40px;
+            text-align: center;
+            background: rgba(15, 15, 15, 0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            box-shadow: 0 0 40px rgba(168, 85, 247, 0.1);
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            background: #050505;
+            border: 1px solid #333;
+            border-radius: 12px;
+            color: #fff;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-glow);
+        }
+
+        .btn-enter {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-enter:hover {
+            background: #9333ea;
+            box-shadow: 0 0 15px var(--primary-glow);
+            transform: translateY(-1px);
+        }
+
+        /* --- DASHBOARD --- */
+        .dashboard-container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: none; /* JS toggles this */
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding: 20px;
+            border-radius: 16px;
+            background: linear-gradient(90deg, rgba(168,85,247,0.1) 0%, transparent 100%);
+            border: 1px solid rgba(168,85,247,0.2);
+        }
+
+        .admin-title {
+            font-size: 1.5rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .admin-title i { color: var(--primary); }
+
+        .admin-user-info {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .admin-user-info span {
+            color: #fff;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        .admin-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            background: #27272a;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .admin-btn:hover {
+            background: #3f3f46;
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        /* --- GRID LAYOUT --- */
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        /* --- CARDS --- */
+        .admin-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .admin-card:hover {
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        .admin-card h4 {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.85rem;
+        }
+
+        .admin-card h4 i { color: var(--primary); }
+
+        /* --- INPUTS INSIDE CARDS --- */
+        .admin-input, .admin-textarea {
+            width: 100%;
+            background: #050505;
+            border: 1px solid #27272a;
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: 0.2s;
+        }
+
+        .admin-input:focus, .admin-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2);
+        }
+
+        .admin-label-small {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        /* --- STATS --- */
+        .admin-stat-big {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--success);
+            text-shadow: 0 0 20px var(--success-glow);
+            letter-spacing: -1px;
+        }
+
+        /* --- VISITORS TABLE (ACTIVITY LIST) --- */
+        .visitors-table-container {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        .visitors-table-container th {
+            text-align: left;
+            padding: 0 16px 8px 16px;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .visitors-table-container tbody tr {
+            background: rgba(255, 255, 255, 0.03);
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .visitors-table-container tbody tr:hover {
+            background: rgba(255, 255, 255, 0.06);
+            transform: scale(1.01);
+        }
+
+        .visitors-table-container td {
+            padding: 12px 16px;
+        }
+
+        .visitors-table-container td:first-child {
+            border-top-left-radius: 10px;
+            border-bottom-left-radius: 10px;
+        }
+
+        .visitors-table-container td:last-child {
+            border-top-right-radius: 10px;
+            border-bottom-right-radius: 10px;
+        }
+
+        /* --- BADGES & AVATARS --- */
+        .player-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .country-badge {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .country-flag {
+            width: 16px;
+            height: 12px;
+            object-fit: cover;
+            border-radius: 2px;
+            margin-right: 6px;
+        }
+
+        /* --- SCROLLBAR --- */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f0f0f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div class="login-container" id="login-screen">
+        <div class="login-box glass-panel">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <img src="https://i.postimg.cc/6p55m2zb/texto-enderland.png" alt="Enderland" style="max-width: 180px; filter: drop-shadow(0 0 10px rgba(168,85,247,0.5));">
+                <div style="color: var(--text-muted); margin-top: 12px; font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase;">Admin Access</div>
+            </div>
+            
+            <div style="text-align: left; margin-bottom: 8px;">
+                <label class="admin-label-small">USUARIO</label>
+            </div>
+            <input type="text" id="admin-user" class="login-input" placeholder="Ingresa tu usuario...">
+            
+            <div style="text-align: left; margin-bottom: 8px;">
+                <label class="admin-label-small">CONTRASEÑA</label>
+            </div>
+            <input type="password" id="admin-pass" class="login-input" placeholder="••••••••••••">
+            
+            <button class="btn-enter" onclick="submitAdminLogin()">
+                <i class="fas fa-fingerprint" style="margin-right: 8px;"></i> Acceder al Sistema
+            </button>
+            
+            <div id="login-error" style="color: var(--danger); text-align: center; margin-top: 15px; font-size: 0.85rem; height: 20px;"></div>
+            
+            <a href="index.html" style="display: inline-block; margin-top: 25px; color: var(--text-muted); text-decoration: none; font-size: 0.85rem; transition: color 0.2s;">
+                <i class="fas fa-chevron-left" style="margin-right: 5px;"></i> Regresar a la Tienda
+            </a>
+        </div>
+    </div>
+
+    <!-- DASHBOARD SCREEN -->
+    <div class="dashboard-container" id="dashboard-screen">
+        
+        <!-- HEADER -->
+        <div class="admin-header glass-panel">
+            <div class="admin-title">
+                <i class="fas fa-shield-alt fa-lg"></i>
+                <span>PANEL DE CONTROL</span>
+            </div>
+            <div class="admin-user-info">
+                Logueado como: <span id="admin-username">Admin</span>
+                <button class="admin-btn" style="margin-left: 20px; background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.2);" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Salir
+                </button>
+            </div>
+        </div>
+
+        <div class="admin-grid">
+            
+            <!-- GESTIÓN DE USUARIOS (SOLO SUPERADMIN) -->
+            <div class="admin-card" id="user-management-card" style="display: none; border: 1px solid rgba(255, 215, 0, 0.3);">
+                <h4 style="color: #ffd700;"><i class="fas fa-crown"></i> Gestión de Staff</h4>
+                
+                <div style="background: rgba(255,215,0,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px;">
+                    <div class="admin-label-small" style="color: #ffd700;">AÑADIR NUEVO ADMIN</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; margin-top: 8px;">
+                        <input type="text" id="new-admin-user" class="admin-input" placeholder="Usuario">
+                        <input type="password" id="new-admin-pass" class="admin-input" placeholder="Contraseña">
+                        <button class="admin-btn" style="background: #ffd700; color: #000; font-weight: bold;" onclick="createAdminUser()">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="admin-label-small">ADMINISTRADORES ACTIVOS</div>
+                <div id="admin-users-list" style="max-height: 150px; overflow-y: auto; margin-top: 8px; display: flex; flex-direction: column; gap: 8px;"></div>
+            </div>
+
+            <!-- ESTADÍSTICAS -->
+            <div class="admin-card">
+                <h4><i class="fas fa-chart-pie"></i> Métricas Financieras</h4>
+                
+                <div style="text-align: center; padding: 20px 0;">
+                    <div class="admin-label-small">TOTAL RECAUDADO</div>
+                    <div class="admin-stat-big">$<span id="stat-total">0.00</span></div>
+                    <div style="color: var(--success); font-size: 0.8rem; margin-top: 5px;">
+                        <i class="fas fa-arrow-up"></i> Actualizado en tiempo real
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
+                    <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px;">
+                        <div class="admin-label-small">CUPÓN TOP</div>
+                        <div id="stat-top-coupon" style="font-weight: 600; color: #fff; margin-top: 5px;">-</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px;">
+                        <div class="admin-label-small">TOP PRODUCTOS</div>
+                        <ol id="stat-top-products" style="padding-left: 15px; margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.8rem;"></ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GESTIÓN CATÁLOGO -->
+            <div class="admin-card">
+                <h4><i class="fas fa-box-open"></i> Catálogo de Tienda</h4>
+                
+                <div class="admin-label-small">CATEGORÍA</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="admin-category-name" class="admin-input" placeholder="Nombre Visible" />
+                    <input type="text" id="admin-category-key" class="admin-input" placeholder="ID (key)" />
+                </div>
+                
+                <hr style="border-color: rgba(255,255,255,0.05); margin: 15px 0;">
+                
+                <div class="admin-label-small">NUEVO ARTÍCULO</div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <input type="text" id="admin-kit-name" class="admin-input" placeholder="Nombre del Producto">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+                        <input type="text" id="admin-kit-image" class="admin-input" placeholder="URL Imagen">
+                        <input type="number" step="0.01" id="admin-kit-price" class="admin-input" placeholder="Precio $">
+                    </div>
+                    <textarea id="admin-kit-description" class="admin-textarea" rows="3" placeholder="Beneficios (uno por línea)..."></textarea>
+                    
+                    <button class="admin-btn" style="background: var(--primary); border: none;" onclick="saveNewKit()">
+                        <i class="fas fa-save"></i> Publicar Artículo
+                    </button>
+                </div>
+                
+                <div id="admin-kit-status" style="font-size:0.8rem; color: var(--text-muted); margin-top:10px; text-align: center;"></div>
+                <div id="admin-catalog-list" style="margin-top:15px; font-size:0.8rem; color: var(--text-muted);"></div>
+            </div>
+
+            <!-- CUPONES -->
+            <div class="admin-card">
+                <h4><i class="fas fa-ticket-alt"></i> Gestión de Cupones</h4>
+                
+                <div style="background: rgba(168, 85, 247, 0.05); padding: 15px; border-radius: 12px; border: 1px dashed rgba(168, 85, 247, 0.3);">
+                    <div class="admin-label-small" style="color: var(--primary);">CREAR CUPÓN</div>
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                        <input type="text" id="admin-coupon-code" class="admin-input" placeholder="CÓDIGO (Ej: VERANO2026)" style="text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                            <input type="number" step="1" id="admin-coupon-percent" class="admin-input" placeholder="% Descuento">
+                            <input type="number" step="1" id="admin-coupon-max" class="admin-input" placeholder="Límite Usos">
+                        </div>
+                        <button class="admin-btn" onclick="saveCoupon()" style="width: 100%;">
+                            <i class="fas fa-check"></i> Activar Cupón
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="admin-coupon-status" style="font-size:0.8rem; margin-top:10px; text-align: center;"></div>
+                
+                <div class="admin-label-small" style="margin-top: 20px;">CUPONES ACTIVOS</div>
+                <div id="admin-coupons-list" style="margin-top:10px; display: flex; flex-direction: column; gap: 8px;"></div>
+            </div>
+
+            <!-- ÚLTIMAS VISITAS -->
+            <div class="admin-card" style="grid-column: 1 / -1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h4><i class="fas fa-satellite-dish"></i> Actividad en Tiempo Real</h4>
+                    <span style="font-size: 0.8rem; color: var(--success); display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 8px var(--success);"></span>
+                        Live
+                    </span>
+                </div>
+                
+                <div style="overflow-x: auto; max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                    <table class="visitors-table-container">
+                        <thead>
+                            <tr>
+                                <th>Jugador</th>
+                                <th>Ubicación</th>
+                                <th>Hora</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-visits-list">
+                            <!-- JS will populate this -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Firebase (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+    <script src="js/admin.js?v=4.0"></script>
+</body>
+</html>

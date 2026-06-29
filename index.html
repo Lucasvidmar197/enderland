@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enderland Network - Tienda Oficial</title>
+    <link rel="icon" href="https://i.postimg.cc/pTZRVs1F/93db69b6-6f32-44ef-9e5a-ae199feadaa0.jpg">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+    <!-- ============ LOGIN OVERLAY ============ -->
+    <div id="login-overlay" class="overlay-screen">
+        <div class="login-box">
+            <div id="avatar-preview" class="login-avatar-preview"></div>
+            <h2 style="color:#fff;margin-bottom:5px;">Bienvenido a Enderland</h2>
+            <p style="color:#888;margin-bottom:20px;">Ingresa tu nickname de Minecraft</p>
+            <input type="text" id="nick-input" class="login-input" placeholder="Tu nickname" oninput="updateSkin()" maxlength="16">
+            <button class="btn-enter" onclick="submitLogin()">
+                <i class="fas fa-arrow-right"></i> ENTRAR
+            </button>
+        </div>
+    </div>
+
+    <!-- ============ TERMS OVERLAY ============ -->
+    <div id="terms-overlay" class="overlay-screen" style="opacity:0;display:none;">
+        <div class="terms-box">
+            <img src="https://i.postimg.cc/pTZRVs1F/93db69b6-6f32-44ef-9e5a-ae199feadaa0.jpg" alt="Logo" style="width:60px;border-radius:50%;border:2px solid var(--primary);margin-bottom:10px;">
+            <h2 style="color:#fff;margin-bottom:5px;">Términos y Condiciones</h2>
+            <p style="color:#888;font-size:0.9rem;margin-bottom:15px;">Lee y acepta para continuar</p>
+            <div class="terms-content">
+                <p><strong>1. Aceptación de Términos</strong></p>
+                <p>Al realizar una compra en la tienda de Enderland Network, aceptas estos términos y condiciones.</p>
+                <br>
+                <p><strong>2. Productos Virtuales</strong></p>
+                <p>Todos los productos (rangos, kits, llaves, etc.) son bienes virtuales dentro del servidor de Minecraft. No son reembolsables ni intercambiables por dinero real.</p>
+                <br>
+                <p><strong>3. Entregas</strong></p>
+                <p>Los productos se entregan automáticamente al nick proporcionado. Verifica que el nick sea correcto. No nos hacemos responsables por nicks mal escritos.</p>
+                <br>
+                <p><strong>4. Prohibiciones</strong></p>
+                <p>No está permitido realizar cargos indebidos, estafas o uso de métodos de pago fraudulentos. Cualquier intento resultará en ban permanente del servidor.</p>
+                <br>
+                <p><strong>5. Cambios en la Tienda</strong></p>
+                <p>Enderland Network se reserva el derecho de modificar precios, productos y términos sin previo aviso.</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:15px;">
+                <input type="checkbox" id="accept-terms-check">
+                <label for="accept-terms-check" style="cursor:pointer;color:#fff;font-size:0.9rem;">He leído y acepto los términos y condiciones.</label>
+            </div>
+            <button id="btn-enter-shop" class="btn-accept" style="opacity:0.5;pointer-events:none;" onclick="enterShop()">
+                ENTRAR A LA TIENDA
+            </button>
+            <script>
+                document.getElementById('accept-terms-check').addEventListener('change',function(){
+                    const btn=document.getElementById('btn-enter-shop');
+                    if(this.checked){btn.style.opacity='1';btn.style.pointerEvents='auto';}
+                    else{btn.style.opacity='0.5';btn.style.pointerEvents='none';}
+                });
+            </script>
+        </div>
+    </div>
+
+    <!-- ============ NAVBAR ============ -->
+    <nav class="navbar">
+        <div class="nav-logo">
+            <img src="https://i.postimg.cc/pTZRVs1F/93db69b6-6f32-44ef-9e5a-ae199feadaa0.jpg" alt="Logo">
+            <span>Enderland</span>
+        </div>
+        <button class="hamburger-btn" onclick="toggleMobileSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="nav-links">
+            <div id="nav-profile" style="display:flex;align-items:center;gap:10px;margin-right:16px;border-right:1px solid rgba(255,255,255,0.06);padding-right:16px;">
+                <div id="sidebar-avatar" onclick="showFullSkin()" style="width:32px;height:32px;border-radius:50%;background-size:cover;background-color:#333;background-image:url('https://minotar.net/helm/Steve/32.png');cursor:pointer;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"></div>
+                <span id="sidebar-username" style="font-weight:600;font-size:0.9rem;">Invitado</span>
+                <button onclick="showFullSkin()" style="background:none;border:none;color:var(--primary);cursor:pointer;" title="Ver Skin 3D"><i class="fas fa-street-view"></i></button>
+            </div>
+            <a href="#" class="nav-link active" onclick="resetNavigation();return false;">Inicio</a>
+            <a href="#" class="nav-link" onclick="openCart();return false;">Carrito</a>
+        </div>
+    </nav>
+
+    <!-- ============ SKIN VIEWER OVERLAY ============ -->
+    <div id="skin-viewer-overlay" class="modal" style="background:rgba(0,0,0,0.95);">
+        <div class="modal-content" style="max-width:400px;text-align:center;">
+            <i class="fas fa-times close-modal" onclick="closeSkinViewer()"></i>
+            <h3 style="margin-bottom:20px;color:var(--primary);">Tu Skin</h3>
+            <div id="skin-render-container" style="width:100%;height:400px;display:flex;align-items:center;justify-content:center;"></div>
+        </div>
+    </div>
+
+    <!-- ============ MOBILE SIDEBAR ============ -->
+    <div class="mobile-sidebar-overlay" id="mobile-sidebar-overlay" onclick="toggleMobileSidebar()"></div>
+    <div id="mobile-sidebar" class="mobile-sidebar">
+        <div class="mobile-sidebar-header">
+            <h3>MENÚ</h3>
+            <button class="close-sidebar" onclick="toggleMobileSidebar()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="mobile-sidebar-content">
+            <div class="mobile-profile" onclick="showFullSkin()">
+                <div id="mobile-sidebar-avatar" class="mobile-profile-avatar" style="background-image:url('https://minotar.net/helm/Steve/50.png');"></div>
+                <div>
+                    <div id="mobile-sidebar-username" class="mobile-profile-name">Invitado</div>
+                    <div class="mobile-profile-status">Online</div>
+                </div>
+            </div>
+            <a href="#" class="mobile-nav-item" onclick="resetNavigation();toggleMobileSidebar();return false;"><i class="fas fa-home"></i> Inicio</a>
+            <a href="#" class="mobile-nav-item" onclick="openCart();toggleMobileSidebar();return false;"><i class="fas fa-shopping-cart"></i> Carrito</a>
+            <div style="margin-top:20px;margin-bottom:10px;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;padding:0 12px;">Categorías</div>
+            <a href="#section-ranks" class="mobile-nav-item" onclick="scrollToCategory('section-ranks');toggleMobileSidebar();"><i class="fas fa-crown" style="color:gold;"></i> Rangos</a>
+            <a href="#section-kits" class="mobile-nav-item" onclick="scrollToCategory('section-kits');toggleMobileSidebar();"><i class="fas fa-box-open" style="color:var(--secondary);"></i> Kits</a>
+            <div style="margin-top:auto;padding-top:30px;text-align:center;">
+                <p style="font-size:0.75rem;color:#555;">Enderland Network &copy; 2026</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ APP LAYOUT ============ -->
+    <div class="app-layout">
+
+        <!-- MAIN CONTENT AREA -->
+        <div class="main-area">
+
+            <!-- HERO -->
+            <section class="hero-section">
+                <div class="server-status-badge">
+                    <span class="status-dot"></span>
+                    <span id="server-online-text">ONLINE</span>
+                </div>
+                <h1>TIENDA OFICIAL</h1>
+                <p>Mejora tu experiencia en Enderland. Rangos, Kits y más.</p>
+            </section>
+
+            <!-- PROMO BANNER -->
+            <div class="promo-banner">
+                <div class="promo-content">
+                    <div class="promo-icon"><i class="fas fa-bolt"></i></div>
+                    <div class="promo-text">
+                        <h4>¡Compra rápida y segura!</h4>
+                        <p>Recibe tus productos al instante dentro del servidor</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CATEGORY BUTTONS -->
+            <div id="category-buttons" class="categories-wrapper"></div>
+
+            <!-- PRODUCTS SECTIONS -->
+            <section id="survival-op-sections" style="min-height:400px;">
+                <div id="semi-anarquico" style="display:none;">
+                    <div class="section-header">
+                        <i class="fas fa-sword"></i>
+                        <h2>Items Custom</h2>
+                    </div>
+                    <div class="products-grid"></div>
+                </div>
+                <div id="vanilla-rangos" style="display:none;">
+                    <div class="section-header">
+                        <i class="fas fa-crown" style="color:gold;"></i>
+                        <h2 style="color:gold;">Rangos Survival OP</h2>
+                    </div>
+                    <div class="products-grid"></div>
+                </div>
+                <div id="arena-rangos" style="display:none;">
+                    <div class="section-header">
+                        <i class="fas fa-key"></i>
+                        <h2>Llaves</h2>
+                    </div>
+                    <div class="products-grid"></div>
+                </div>
+                <div id="kits-container" style="display:none;">
+                    <div class="section-header">
+                        <i class="fas fa-box-open"></i>
+                        <h2>Paquetes</h2>
+                    </div>
+                    <div class="products-grid"></div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- RIGHT SIDE PANEL (Top Buyer + Recent Purchases) -->
+        <aside class="side-panel">
+            <div class="side-panel-inner">
+
+                <!-- TOP BUYER -->
+                <div id="section-top-buyer" class="side-card">
+                    <div class="side-card-header">
+                        <i class="fas fa-trophy gold-icon"></i>
+                        Mejor Comprador
+                    </div>
+                    <div id="top-buyer-container">
+                        <div class="top-buyer-empty">Cargando...</div>
+                    </div>
+                </div>
+
+                <!-- RECENT PURCHASES -->
+                <div id="section-recent-purchases" class="side-card">
+                    <div class="side-card-header">
+                        <i class="fas fa-clock primary-icon"></i>
+                        Últimas Compras
+                    </div>
+                    <div id="recent-purchases-container">
+                        <div class="top-buyer-empty">Cargando compras recientes...</div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-col">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:15px;">
+                    <img src="https://i.postimg.cc/pTZRVs1F/93db69b6-6f32-44ef-9e5a-ae199feadaa0.jpg" alt="Logo" style="width:40px;border-radius:50%;border:2px solid var(--primary);">
+                    <span style="font-weight:900;color:#fff;">ENDERLAND</span>
+                </div>
+                <p style="font-size:0.82rem;">La mejor experiencia de Minecraft en Colombia. Comunidad, estabilidad y diversión asegurada.</p>
+                <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.1);padding:6px 14px;border-radius:20px;margin-top:10px;">
+                    <span>🇨🇴</span>
+                    <span style="font-size:0.75rem;font-weight:600;color:var(--success);">Hosteado en Colombia</span>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>MODALIDADES</h4>
+                <ul>
+                    <li>Semi Anárquico</li>
+                    <li>Vanilla</li>
+                    <li>SurvivalOP</li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>LEGAL</h4>
+                <ul>
+                    <li><a href="#" onclick="openPrivacyModal();return false;">Términos y Condiciones</a></li>
+                    <li><a href="#" onclick="openPrivacyModal();return false;">Política de Privacidad</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>COMUNIDAD</h4>
+                <p style="font-size:0.82rem;">Únete a nuestro Discord para soporte y noticias.</p>
+                <a href="https://discord.gg/wmS4Ztg8Af" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#5865F2;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:700;font-size:0.85rem;margin-top:8px;transition:0.3s;">
+                    <i class="fab fa-discord"></i> Unirse al Discord
+                </a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Copyright &copy; 2026 <strong>Enderland Network</strong>. Todos los derechos reservados.</p>
+            <p style="margin-top:6px;">No estamos afiliados con Mojang AB.</p>
+            <a href="https://polagodd.com/" target="_blank" style="color:#555;text-decoration:none;font-size:0.75rem;display:inline-block;margin-top:10px;">Desarrollado por <strong>polagodd</strong></a>
+        </div>
+    </footer>
+
+    <!-- ============ CART FLOAT ============ -->
+    <div id="cart-float" class="cart-float" onclick="openCart()">
+        <i class="fas fa-shopping-cart"></i>
+        <div id="cart-count" class="cart-count hidden">0</div>
+    </div>
+
+    <!-- ============ CART MODAL ============ -->
+    <div id="cart-modal" class="modal">
+        <div class="modal-content">
+            <i class="fas fa-times close-modal" onclick="closeModal('cart-modal')"></i>
+            <h3 style="margin-bottom:8px;">Tu Carrito <span id="cart-username" style="color:var(--primary);font-size:0.9em;"></span></h3>
+            <div id="cart-items-container" style="margin:16px 0;">
+                <p style="text-align:center;color:var(--text-muted);">Tu carrito está vacío.</p>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:14px 0;border-top:1px solid rgba(255,255,255,0.06);font-weight:700;font-size:1.1rem;">
+                <span>Total</span>
+                <span>$<span id="cart-total-price">0.00</span></span>
+            </div>
+            <!-- Coupon -->
+            <div style="margin-bottom:16px;margin-top:10px;">
+                <div style="display:flex;gap:8px;">
+                    <input type="text" id="cart-coupon-input" placeholder="Código de cupón" style="flex:1;padding:10px;text-align:left;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;outline:none;">
+                    <button onclick="applyCouponFromCart()" style="background:var(--primary);border:none;color:#fff;padding:10px 14px;border-radius:6px;cursor:pointer;"><i class="fas fa-check"></i></button>
+                </div>
+                <small id="cart-coupon-status" style="display:block;margin-top:4px;color:var(--text-muted);font-size:0.75rem;"></small>
+            </div>
+            <!-- Discount row (hidden by default) -->
+            <div id="cart-discount-row" style="display:none;justify-content:space-between;padding:8px 0;border-top:1px solid rgba(0,255,136,0.15);color:var(--success);font-weight:600;font-size:0.9rem;">
+                <span>Descuento <span id="cart-coupon-badge" style="background:rgba(0,255,136,0.1);padding:2px 8px;border-radius:4px;font-size:0.75rem;color:#0f0;"></span></span>
+                <span>-$<span id="cart-discount-amount">0.00</span></span>
+            </div>
+            <!-- Discord -->
+            <div style="margin-bottom:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">
+                <label style="display:block;margin-bottom:4px;font-size:0.85rem;color:#ccc;">Usuario de Discord:</label>
+                <input type="text" id="discord-user-input" placeholder="Ej: usuario#1234" style="width:100%;padding:10px;text-align:left;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;outline:none;">
+                <small style="color:#777;font-size:0.7rem;">Te contactaremos por Discord si hay algún problema.</small>
+            </div>
+            <!-- Gift -->
+            <div class="gift-section">
+                <label class="gift-toggle">
+                    <input type="checkbox" id="is-gift" onchange="toggleGiftInput()">
+                    ¿Es un regalo para otro jugador?
+                </label>
+                <input type="text" id="gift-nickname" class="gift-input-field" placeholder="Nick del destinatario">
+            </div>
+            <button id="checkout-btn" class="btn-accept" style="margin-top:16px;font-size:0.95rem;" onclick="checkout()">
+                Finalizar Compra <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- ============ PRIVACY MODAL ============ -->
+    <div id="privacy-modal" class="modal">
+        <div class="modal-content">
+            <i class="fas fa-times close-modal" onclick="closeModal('privacy-modal')"></i>
+            <h3>Políticas</h3>
+            <p style="color:var(--text-muted);line-height:1.6;">Aquí van los términos y condiciones...</p>
+        </div>
+    </div>
+
+    <!-- ============ SKIN MODAL ============ -->
+    <div id="skin-modal" class="modal" style="z-index:10001;">
+        <div class="modal-content" style="text-align:center;">
+            <i class="fas fa-times close-modal" onclick="closeModal('skin-modal')"></i>
+            <h3>Skin de <span id="skin-username-display" style="color:var(--primary);"></span></h3>
+            <div id="skin-viewer-container"><canvas id="skin_container"></canvas></div>
+            <p style="color:var(--text-muted);font-size:0.8rem;">Arrastra para rotar • Rueda para zoom</p>
+        </div>
+    </div>
+
+    <!-- ============ KIT MODAL ============ -->
+    <div id="kit-modal" class="modal" style="z-index:10001;">
+        <div class="modal-content">
+            <i class="fas fa-times close-modal" onclick="closeModal('kit-modal')"></i>
+            <h3 id="kit-modal-title">Detalles del Kit</h3>
+            <img id="kit-modal-img" src="" style="width:100%;max-width:400px;border-radius:8px;margin:0 auto 20px auto;display:none;">
+            <ul id="kit-modal-list" class="kit-detail-list" style="list-style:none;padding:0;"></ul>
+        </div>
+    </div>
+
+    <!-- ============ FAQ MODAL ============ -->
+    <div id="faq-modal" class="modal" style="z-index:10001;">
+        <div class="modal-content">
+            <i class="fas fa-times close-modal" onclick="closeModal('faq-modal')"></i>
+            <h3 id="faq-title">Pregunta Frecuente</h3>
+            <p id="faq-body" class="faq-answer"></p>
+        </div>
+    </div>
+
+    <!-- ============ KIT PREVIEW OVERLAY ============ -->
+    <div id="kit-preview-overlay" class="modal" style="z-index:10000;">
+        <div class="modal-content" style="max-width:500px;">
+            <i class="fas fa-times close-modal" onclick="closeKitPreview()"></i>
+            <h3 id="kit-preview-title" style="color:var(--primary);">Contenido del Kit</h3>
+            <div id="kit-preview-content" class="kit-detail-list" style="max-height:400px;overflow-y:auto;color:#ddd;"></div>
+        </div>
+    </div>
+
+    <!-- ============ CHATBOT ============ -->
+    <div id="chatbot-float" style="position:fixed;bottom:95px;right:30px;background:var(--primary);width:48px;height:48px;border-radius:50%;display:flex;justify-content:center;align-items:center;font-size:1.3rem;box-shadow:0 4px 20px rgba(157,0,255,0.3);cursor:pointer;z-index:200;transition:0.3s;" onclick="toggleChat()">
+        <i class="fas fa-robot"></i>
+    </div>
+
+    <div id="chatbot-window" style="position:fixed;bottom:160px;right:30px;width:320px;max-height:400px;background:rgba(17,17,17,0.97);backdrop-filter:blur(16px);border-radius:var(--radius-md);border:1px solid rgba(255,255,255,0.06);display:none;flex-direction:column;z-index:10002;box-shadow:0 16px 50px rgba(0,0,0,0.6);overflow:hidden;">
+        <div style="padding:16px;background:linear-gradient(135deg,var(--primary),#6a00b3);display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span class="status-dot" style="background:#22c55e;box-shadow:0 0 8px #22c55e;"></span>
+                <span style="font-weight:700;">EnderBot</span>
+            </div>
+            <button onclick="toggleChat()" style="background:none;border:none;color:#fff;cursor:pointer;"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="chatbot-messages" style="flex:1;padding:16px;overflow-y:auto;max-height:280px;">
+            <div style="margin-bottom:8px;display:flex;gap:8px;">
+                <div style="background:rgba(157,0,255,0.15);padding:10px 14px;border-radius:12px 12px 12px 0;color:#ddd;font-size:0.85rem;max-width:80%;">¡Hola! Soy EnderBot 🤖 ¿En qué puedo ayudarte?</div>
+            </div>
+        </div>
+        <div style="display:flex;border-top:1px solid rgba(255,255,255,0.06);padding:8px;gap:8px;">
+            <input type="text" id="chatbot-input" placeholder="Escribe tu mensaje..." style="flex:1;padding:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:#fff;outline:none;" onkeypress="handleChatInput(event)">
+            <button onclick="sendChatMessage()" style="background:var(--primary);border:none;color:#fff;padding:10px 14px;border-radius:6px;cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+
+    <!-- ============ TOAST CONTAINER ============ -->
+    <div id="toast-container"></div>
+
+    <!-- Hidden elements required by JS -->
+    <div style="display:none;">
+        <span id="sidebar-username"></span>
+        <div id="sidebar-avatar"></div>
+        <div id="terms-overlay"></div>
+    </div>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="https://bs-community.github.io/skinview3d/js/skinview3d.bundle.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
