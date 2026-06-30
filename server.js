@@ -328,12 +328,17 @@ app.post('/api/tebex/validate-coupon', async (req, res) => {
 
 // 3. Checkout — CON SOPORTE PARA REGALO (gift)
 app.post('/api/tebex-checkout', async (req, res) => {
+    console.log(`[Tebex Checkout] === INICIO REQUEST ===`);
+    console.log(`[Tebex Checkout] ENV check: PUBLIC_TOKEN=${TEBEX_PUBLIC_TOKEN ? 'SET(' + TEBEX_PUBLIC_TOKEN.substring(0, 5) + '...)' : 'MISSING'}, PRIVATE_KEY=${TEBEX_PRIVATE_KEY ? 'SET' : 'MISSING'}`);
+    console.log(`[Tebex Checkout] ALLOWED_ORIGINS: ${JSON.stringify(ALLOWED_ORIGINS)}`);
+    console.log(`[Tebex Checkout] Body recibido:`, JSON.stringify(req.body));
+
     if (!checkRateLimit(req, 'checkout')) {
         return res.status(429).json({ error: "Demasiados intentos de compra. Espera un momento." });
     }
 
     const { nick, cart, coupon, giftNickname } = req.body;
-    console.log(`[Tebex] Checkout para ${nick} con ${cart?.length || 0} items${giftNickname ? ` (regalo para ${giftNickname})` : ''}`);
+    console.log(`[Tebex Checkout] Checkout para ${nick} con ${cart?.length || 0} items${giftNickname ? ` (regalo para ${giftNickname})` : ''}`);
 
     // Validar nickname del comprador
     if (!nick || !isValidMinecraftNick(nick)) {
@@ -489,8 +494,9 @@ app.post('/api/tebex-checkout', async (req, res) => {
         res.json({ success: true, ident, url: manualUrl });
         
     } catch (e) {
-        console.error(`[Tebex] Error en checkout:`, e.message);
-        res.status(500).json({ error: "Error interno. Intenta de nuevo más tarde." });
+        console.error(`[Tebex Checkout] ❌ ERROR COMPLETO:`, e.message);
+        console.error(`[Tebex Checkout] Stack:`, e.stack);
+        res.status(500).json({ error: "Error interno. Intenta de nuevo más tarde.", debug: e.message });
     }
 });
 
