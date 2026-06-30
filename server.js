@@ -231,7 +231,10 @@ app.use(bodyParser.json({
     }
 }));
 
-app.use(express.static('.'));
+// Solo servir estáticos en desarrollo local (en Vercel los sirve el CDN)
+if (!process.env.VERCEL) {
+    app.use(express.static('.'));
+}
 
 // ============================================================
 // API ENDPOINTS
