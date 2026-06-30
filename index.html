@@ -287,19 +287,15 @@
                 <span>Descuento <span id="cart-coupon-badge" style="background:rgba(0,255,136,0.1);padding:2px 8px;border-radius:4px;font-size:0.75rem;color:#0f0;"></span></span>
                 <span>-$<span id="cart-discount-amount">0.00</span></span>
             </div>
-            <!-- Discord -->
-            <div style="margin-bottom:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">
-                <label style="display:block;margin-bottom:4px;font-size:0.85rem;color:#ccc;">Usuario de Discord:</label>
-                <input type="text" id="discord-user-input" placeholder="Ej: usuario#1234" style="width:100%;padding:10px;text-align:left;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;outline:none;">
-                <small style="color:#777;font-size:0.7rem;">Te contactaremos por Discord si hay algún problema.</small>
-            </div>
-            <!-- Gift -->
-            <div class="gift-section">
-                <label class="gift-toggle">
+            <!-- Gift (Regalo) -->
+            <div class="gift-section" style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">
+                <label class="gift-toggle" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem;color:var(--text-secondary);margin-bottom:8px;">
                     <input type="checkbox" id="is-gift" onchange="toggleGiftInput()">
+                    <i class="fas fa-gift" style="color:var(--secondary);"></i>
                     ¿Es un regalo para otro jugador?
                 </label>
-                <input type="text" id="gift-nickname" class="gift-input-field" placeholder="Nick del destinatario">
+                <input type="text" id="gift-nickname" class="gift-input-field" placeholder="Nickname del destinatario (exacto)" maxlength="16" style="width:100%;padding:10px;background:var(--bg-input);border:1px solid var(--border-color);border-radius:var(--radius-sm);color:#fff;font-size:0.85rem;display:none;transition:var(--transition);">
+                <small id="gift-status" style="display:none;margin-top:4px;color:var(--text-muted);font-size:0.72rem;"><i class="fas fa-info-circle"></i> El producto se entregará al jugador indicado, no a ti.</small>
             </div>
             <button id="checkout-btn" class="btn-accept" style="margin-top:16px;font-size:0.95rem;" onclick="checkout()">
                 Finalizar Compra <i class="fas fa-arrow-right"></i>
@@ -381,13 +377,6 @@
 
     <!-- ============ TOAST CONTAINER ============ -->
     <div id="toast-container"></div>
-
-    <!-- Hidden elements required by JS -->
-    <div style="display:none;">
-        <span id="sidebar-username"></span>
-        <div id="sidebar-avatar"></div>
-        <div id="terms-overlay"></div>
-    </div>
 
     <!-- ============ SCRIPTS ============ -->
     <script src="https://bs-community.github.io/skinview3d/js/skinview3d.bundle.js"></script>

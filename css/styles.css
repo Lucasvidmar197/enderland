@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
 :root {
     --primary: #9d00ff;
     --primary-dark: #7a00cc;
@@ -22,7 +24,7 @@
     --radius-xl: 28px;
     --shadow-card: 0 4px 24px rgba(0,0,0,0.3);
     --shadow-glow: 0 0 30px rgba(157,0,255,0.15);
-    --font-main: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-main: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -38,11 +40,28 @@ html {
 
 body {
     font-family: var(--font-main);
-    background: var(--bg-dark);
+    background:
+        radial-gradient(circle at 12% -5%, rgba(157,0,255,0.12), transparent 42%),
+        radial-gradient(circle at 88% 8%, rgba(0,212,255,0.08), transparent 44%),
+        radial-gradient(circle at 50% 115%, rgba(255,107,53,0.06), transparent 50%),
+        var(--bg-dark);
+    background-attachment: fixed;
     color: var(--text-primary);
     min-height: 100vh;
-    line-height: 1.5;
+    line-height: 1.6;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: radial-gradient(rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 34px 34px;
 }
 
 /* ───── SCROLLBAR ───── */
@@ -455,14 +474,22 @@ body {
 }
 
 .hero-section h1 {
-    font-size: 2.8rem;
+    font-size: 3.2rem;
     font-weight: 900;
-    background: linear-gradient(135deg, #fff, var(--primary-light));
+    background: linear-gradient(120deg, #ffffff 0%, var(--primary-light) 50%, var(--accent) 100%);
+    background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    letter-spacing: 2px;
-    margin-bottom: 8px;
+    letter-spacing: 3px;
+    margin-bottom: 10px;
+    animation: heroGradient 7s ease infinite;
+    filter: drop-shadow(0 4px 30px rgba(157,0,255,0.35));
+}
+
+@keyframes heroGradient {
+    0%, 100% { background-position: 0% center; }
+    50% { background-position: 100% center; }
 }
 
 .hero-section p {
@@ -601,10 +628,10 @@ body {
 }
 
 .card {
-    background: var(--bg-card);
+    background: linear-gradient(160deg, var(--bg-card-hover), var(--bg-card));
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: 22px 20px;
+    border-radius: var(--radius-lg);
+    padding: 24px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -612,6 +639,7 @@ body {
     transition: var(--transition);
     position: relative;
     overflow: hidden;
+    box-shadow: var(--shadow-card);
 }
 
 .card::before {
@@ -669,9 +697,12 @@ body {
 }
 
 .price-tag {
-    font-size: 1.5rem;
+    font-size: 1.65rem;
     font-weight: 900;
-    color: var(--primary);
+    background: linear-gradient(135deg, var(--primary-light), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     margin: 6px 0;
 }
 
@@ -1130,6 +1161,70 @@ body {
 
     .modal-content {
         padding: 20px;
+    }
+}
+
+/* ───── AESTHETIC ENHANCEMENTS ───── */
+.btn-enter, .btn-accept, .btn-add {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-enter::after, .btn-accept::after, .btn-add::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.25), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.6s ease;
+    pointer-events: none;
+}
+
+.btn-enter:hover::after, .btn-accept:hover::after, .btn-add:hover::after {
+    left: 140%;
+}
+
+.navbar {
+    background: linear-gradient(180deg, rgba(10,10,15,0.92), rgba(10,10,15,0.74));
+}
+
+.nav-logo span {
+    background: linear-gradient(135deg, #fff, var(--primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.promo-banner {
+    position: relative;
+    overflow: hidden;
+}
+
+.promo-icon {
+    animation: float 3s ease-in-out infinite;
+    box-shadow: 0 6px 20px rgba(157,0,255,0.35);
+}
+
+.cat-btn:hover {
+    transform: translateY(-2px);
+}
+
+.side-card-header {
+    background: linear-gradient(135deg, rgba(157,0,255,0.10), rgba(0,212,255,0.04));
+}
+
+.cart-float {
+    animation: glow 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
     }
 }
 

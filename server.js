@@ -17,62 +17,145 @@ const TEBEX_WEBHOOK_SECRET = process.env.TEBEX_WEBHOOK_SECRET;
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 const TEBEX_API_BASE = "https://headless.tebex.io/api";
 
+// Dominios permitidos (ajusta a tu dominio real)
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',').map(s => s.trim());
+
 // Cache de productos reales de Tebex
 let tebexProductsCache = [];
 let lastFetchTime = 0;
 const CACHE_TTL = 60000; // 1 minuto
 
+// --- Rate Limiting simple en memoria ---
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 60000; // 1 minuto
+const RATE_LIMITS = {
+    checkout: 5,       // 5 checkouts por minuto
+    coupon: 10,        // 10 validaciones de cupón por minuto
+    general: 60        // 60 peticiones generales por minuto
+};
+
+function getRateLimitKey(req, type) {
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.connection?.remoteAddress || 'unknown';
+    return `${ip}:${type}`;
+}
+
+function checkRateLimit(req, type) {
+    const key = getRateLimitKey(req, type);
+    const now = Date.now();
+    const limit = RATE_LIMITS[type] || RATE_LIMITS.general;
+
+    if (!rateLimitMap.has(key)) {
+        rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+        return true;
+    }
+
+    const entry = rateLimitMap.get(key);
+    if (now > entry.resetAt) {
+        entry.count = 1;
+        entry.resetAt = now + RATE_LIMIT_WINDOW;
+        return true;
+    }
+
+    if (entry.count >= limit) {
+        return false;
+    }
+
+    entry.count++;
+    return true;
+}
+
+// Limpiar rate limit map cada 5 minutos
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of rateLimitMap) {
+        if (now > entry.resetAt) {
+            rateLimitMap.delete(key);
+        }
+    }
+}, 300000);
+
+// --- Validación de inputs ---
+function isValidMinecraftNick(nick) {
+    if (!nick || typeof nick !== 'string') return false;
+    return /^[a-zA-Z0-9_]{3,16}$/.test(nick);
+}
+
+function isValidCartItem(item) {
+    if (!item || typeof item !== 'object') return false;
+    if (!Number.isInteger(item.id) || item.id <= 0) return false;
+    if (item.qty !== undefined && (!Number.isInteger(item.qty) || item.qty <= 0 || item.qty > 100)) return false;
+    return true;
+}
+
+function sanitizeString(str, maxLen = 100) {
+    if (!str || typeof str !== 'string') return '';
+    return str.slice(0, maxLen).replace(/[<>"'&]/g, '');
+}
+
+// --- Firebase Firestore para persistencia en Vercel ---
+const { initializeApp } = require('firebase/app');
+const { getFirestore, collection, addDoc, getDocs, query, orderBy, limit: firestoreLimit } = require('firebase/firestore');
+
+const firebaseConfig = {
+    apiKey: process.env.FIREBASE_API_KEY,
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.FIREBASE_APP_ID
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+
 // --- Almacenamiento de compras (Compras Recientes + Top Comprador) ---
-const DATA_DIR = path.join(__dirname, 'data');
-const PURCHASES_FILE = path.join(DATA_DIR, 'purchases.json');
+// Cache en memoria para reducir lecturas (se refresca cada 30s)
 let purchasesCache = [];
+let lastCacheRefresh = 0;
+const PURCHASES_CACHE_TTL = 30000; // 30 segundos
 
-function ensureDataDir() {
+async function refreshPurchasesCache() {
+    const now = Date.now();
+    if (purchasesCache.length > 0 && (now - lastCacheRefresh) < PURCHASES_CACHE_TTL) {
+        return; // Cache aún válido
+    }
     try {
-        if (!fs.existsSync(DATA_DIR)) {
-            fs.mkdirSync(DATA_DIR, { recursive: true });
+        const q = query(
+            collection(db, 'purchases'),
+            orderBy('timestamp', 'desc'),
+            firestoreLimit(200)
+        );
+        const snapshot = await getDocs(q);
+        purchasesCache = snapshot.docs.map(doc => doc.data());
+        lastCacheRefresh = Date.now();
+        console.log(`[Firebase] Cache refrescado: ${purchasesCache.length} compras`);
+    } catch (e) {
+        console.error('[Firebase] Error refrescando cache:', e.message);
+    }
+}
+
+async function addPurchase(purchaseData) {
+    try {
+        await addDoc(collection(db, 'purchases'), purchaseData);
+        // Invalidar cache para que la próxima lectura traiga datos frescos
+        purchasesCache.unshift(purchaseData);
+        if (purchasesCache.length > 200) {
+            purchasesCache = purchasesCache.slice(0, 200);
         }
+        lastCacheRefresh = Date.now();
+        console.log(`[Firebase] Compra guardada en Firestore`);
     } catch (e) {
-        console.error('[Data] Error creando directorio data:', e.message);
+        console.error('[Firebase] Error guardando compra:', e.message);
     }
 }
 
-function loadPurchases() {
-    try {
-        ensureDataDir();
-        if (fs.existsSync(PURCHASES_FILE)) {
-            const raw = fs.readFileSync(PURCHASES_FILE, 'utf-8');
-            purchasesCache = JSON.parse(raw);
-            console.log(`[Data] ${purchasesCache.length} compras cargadas desde archivo`);
-        }
-    } catch (e) {
-        console.error('[Data] Error cargando compras:', e.message);
-        purchasesCache = [];
-    }
-}
-
-function savePurchases() {
-    try {
-        ensureDataDir();
-        fs.writeFileSync(PURCHASES_FILE, JSON.stringify(purchasesCache, null, 2), 'utf-8');
-    } catch (e) {
-        console.error('[Data] Error guardando compras:', e.message);
-    }
-}
-
-function addPurchase(purchaseData) {
-    purchasesCache.unshift(purchaseData);
-    if (purchasesCache.length > 200) {
-        purchasesCache = purchasesCache.slice(0, 200);
-    }
-    savePurchases();
-}
-
-function getRecentPurchases(limit = 12) {
+async function getRecentPurchases(limit = 12) {
+    await refreshPurchasesCache();
     return purchasesCache.slice(0, limit);
 }
 
-function getTopBuyer() {
+async function getTopBuyer() {
+    await refreshPurchasesCache();
     if (purchasesCache.length === 0) return null;
     const totals = {};
     for (const p of purchasesCache) {
@@ -91,7 +174,8 @@ function getTopBuyer() {
     return topNick ? { nickname: topNick, total: topAmount } : null;
 }
 
-loadPurchases();
+// Carga inicial del cache
+refreshPurchasesCache();
 
 function tebexHeaders(extra = {}) {
     const base64 = Buffer.from(`${TEBEX_PUBLIC_TOKEN}:${TEBEX_PRIVATE_KEY}`).toString('base64');
@@ -127,9 +211,21 @@ async function fetchTebexProducts() {
     return tebexProductsCache;
 }
 
-app.use(cors());
+// --- CORS restringido ---
+app.use(cors({
+    origin: function(origin, callback) {
+        // Permitir peticiones sin origin (herramientas, server-to-server)
+        if (!origin) return callback(null, true);
+        if (ALLOWED_ORIGINS.includes(origin) || ALLOWED_ORIGINS.includes('*')) {
+            return callback(null, true);
+        }
+        callback(new Error('No permitido por CORS'));
+    },
+    credentials: true
+}));
 
 app.use(bodyParser.json({
+    limit: '1mb',
     verify: (req, res, buf) => {
         req.rawBody = buf;
     }
@@ -143,6 +239,10 @@ app.use(express.static('.'));
 
 // 1. Categorías y productos desde Tebex
 app.get('/api/tebex/categories', async (req, res) => {
+    if (!checkRateLimit(req, 'general')) {
+        return res.status(429).json({ error: "Demasiadas peticiones. Intenta de nuevo en un momento." });
+    }
+
     console.log(`[Tebex] Cargando productos desde Tebex...`);
     try {
         const url = `${TEBEX_API_BASE}/accounts/${TEBEX_PUBLIC_TOKEN}/categories?includePackages=1`;
@@ -165,23 +265,36 @@ app.get('/api/tebex/categories', async (req, res) => {
         }
         
         console.error(`[Tebex] API respondió con error ${response.status}`);
-        res.status(502).json({ error: "Error conectando con Tebex", data: [] });
+        res.status(502).json({ error: "Error conectando con la tienda", data: [] });
     } catch (e) {
         console.error(`[Tebex] Error categorías:`, e.message);
-        res.status(500).json({ error: e.message, data: [] });
+        res.status(500).json({ error: "Error interno del servidor", data: [] });
     }
 });
 
-// 2. Validate coupon — creates temporary basket, applies coupon, returns discount info
+// 2. Validate coupon
 app.post('/api/tebex/validate-coupon', async (req, res) => {
+    if (!checkRateLimit(req, 'coupon')) {
+        return res.status(429).json({ valid: false, error: "Demasiados intentos. Espera un momento." });
+    }
+
     const { coupon, cart } = req.body;
     
-    if (!coupon || !coupon.trim()) {
+    if (!coupon || typeof coupon !== 'string' || !coupon.trim()) {
         return res.json({ valid: false, error: "Ingresa un código de cupón" });
     }
+
+    const sanitizedCoupon = sanitizeString(coupon.trim(), 50);
     
-    if (!cart || cart.length === 0) {
+    if (!cart || !Array.isArray(cart) || cart.length === 0) {
         return res.json({ valid: false, error: "El carrito está vacío" });
+    }
+
+    // Validar cada item del cart
+    for (const item of cart) {
+        if (!isValidCartItem(item)) {
+            return res.json({ valid: false, error: "Carrito inválido" });
+        }
     }
 
     try {
@@ -190,10 +303,8 @@ app.post('/api/tebex/validate-coupon', async (req, res) => {
             method: 'POST',
             headers: tebexHeaders(),
             body: JSON.stringify({
-                username: 'validator',
-                ip_address: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || '127.0.0.1',
-                complete_url: 'http://localhost:3000',
-                cancel_url: 'http://localhost:3000'
+                complete_url: ALLOWED_ORIGINS[0] || 'http://localhost:3000',
+                cancel_url: ALLOWED_ORIGINS[0] || 'http://localhost:3000'
             })
         });
 
@@ -220,11 +331,10 @@ app.post('/api/tebex/validate-coupon', async (req, res) => {
         const coupRes = await fetch(`${TEBEX_API_BASE}/accounts/${TEBEX_PUBLIC_TOKEN}/baskets/${ident}/coupons`, {
             method: 'POST',
             headers: tebexHeaders(),
-            body: JSON.stringify({ coupon_code: coupon.trim() })
+            body: JSON.stringify({ coupon_code: sanitizedCoupon })
         });
 
         if (!coupRes.ok) {
-            // Coupon inválido — limpiar basket
             return res.json({ valid: false, error: "❌ Cupón inválido o expirado" });
         }
 
@@ -243,25 +353,18 @@ app.post('/api/tebex/validate-coupon', async (req, res) => {
         // 5. Calculate discount from package prices vs total price
         let originalTotal = 0;
         for (const pkg of (basket?.packages || [])) {
-            originalTotal += (parseFloat(pkg.base_price?.amount || 0) * (pkg.quantity || 1));
+            const inBasket = pkg?.in_basket;
+            const price = parseFloat(inBasket?.price || pkg?.base_price || 0);
+            const qty = inBasket?.quantity || 1;
+            originalTotal += (price * qty);
         }
         const totalWithDiscount = parseFloat(basket?.total_price || originalTotal);
         const discountAmount = Math.max(0, originalTotal - totalWithDiscount);
         const discountPercent = originalTotal > 0 ? Math.round((discountAmount / originalTotal) * 100) : 0;
 
-        // 6. Delete the temporal basket
-        try {
-            await fetch(`${TEBEX_API_BASE}/accounts/${TEBEX_PUBLIC_TOKEN}/baskets/${ident}`, {
-                method: 'DELETE',
-                headers: tebexHeaders()
-            });
-        } catch (e) {
-            // Ignore delete errors
-        }
-
         return res.json({
             valid: true,
-            coupon_code: coupon.trim(),
+            coupon_code: sanitizedCoupon,
             original_total: originalTotal,
             discount_amount: discountAmount,
             discount_percent: discountPercent,
@@ -275,26 +378,65 @@ app.post('/api/tebex/validate-coupon', async (req, res) => {
     }
 });
 
-// 3. Checkout
+// 3. Checkout — CON SOPORTE PARA REGALO (gift)
 app.post('/api/tebex-checkout', async (req, res) => {
-    const { nick, cart, coupon } = req.body;
-    console.log(`[Tebex] Checkout para ${nick} con ${cart?.length || 0} items`);
+    if (!checkRateLimit(req, 'checkout')) {
+        return res.status(429).json({ error: "Demasiados intentos de compra. Espera un momento." });
+    }
 
-    if (!nick || !cart || cart.length === 0) {
-        return res.status(400).json({ error: "Falta nickname o carrito" });
+    const { nick, cart, coupon, giftNickname } = req.body;
+    console.log(`[Tebex] Checkout para ${nick} con ${cart?.length || 0} items${giftNickname ? ` (regalo para ${giftNickname})` : ''}`);
+
+    // Validar nickname del comprador
+    if (!nick || !isValidMinecraftNick(nick)) {
+        return res.status(400).json({ error: "Nickname inválido. Debe ser 3-16 caracteres alfanuméricos." });
+    }
+
+    // Validar carrito
+    if (!cart || !Array.isArray(cart) || cart.length === 0) {
+        return res.status(400).json({ error: "El carrito está vacío" });
+    }
+
+    if (cart.length > 20) {
+        return res.status(400).json({ error: "Demasiados items en el carrito" });
+    }
+
+    for (const item of cart) {
+        if (!isValidCartItem(item)) {
+            return res.status(400).json({ error: "Carrito contiene items inválidos" });
+        }
+    }
+
+    // Validar gift nickname si se proporciona
+    if (giftNickname && !isValidMinecraftNick(giftNickname)) {
+        return res.status(400).json({ error: "El nickname del destinatario es inválido. Debe ser 3-16 caracteres alfanuméricos." });
+    }
+
+    // No se puede regalar a uno mismo
+    if (giftNickname && giftNickname.toLowerCase() === nick.toLowerCase()) {
+        return res.status(400).json({ error: "No puedes regalarte productos a ti mismo." });
     }
 
     try {
         const realProducts = await fetchTebexProducts();
         const realProductIds = new Set(realProducts.map(p => p.id));
+        const realProductsMap = new Map(realProducts.map(p => [p.id, p]));
 
         for (const item of cart) {
             if (!realProductIds.has(item.id)) {
                 console.error(`[Tebex] Producto ID ${item.id} no existe en Tebex`);
                 return res.status(400).json({ 
-                    error: `El producto "${item.name}" (ID: ${item.id}) no existe en Tebex. Debes crearlo primero en https://creator.tebex.io/ y luego actualizar el servidor.`,
-                    invalidProduct: item
+                    error: `El producto "${sanitizeString(item.name)}" no está disponible actualmente.`
                 });
+            }
+            // Verificar si el producto permite gifting cuando se intenta regalar
+            if (giftNickname) {
+                const product = realProductsMap.get(item.id);
+                if (product && product.disable_gifting) {
+                    return res.status(400).json({
+                        error: `El producto "${sanitizeString(product.name)}" no puede ser regalado.`
+                    });
+                }
             }
         }
 
@@ -302,23 +444,28 @@ app.post('/api/tebex-checkout', async (req, res) => {
                          req.connection?.remoteAddress || 
                          '127.0.0.1';
 
-        console.log(`[Tebex] Creando basket...`);
+        // Determinar el username para el basket
+        // Si es un regalo, el basket se crea con el nick del DESTINATARIO (gift recipient)
+        const basketUsername = giftNickname || nick;
+
+        console.log(`[Tebex] Creando basket para ${basketUsername}...`);
         const basketRes = await fetch(`${TEBEX_API_BASE}/accounts/${TEBEX_PUBLIC_TOKEN}/baskets`, {
             method: 'POST',
             headers: tebexHeaders(),
             body: JSON.stringify({
-                username: nick,
+                username: basketUsername,
                 ip_address: clientIp,
-                complete_url: req.headers.origin || "http://localhost:3000",
-                cancel_url: req.headers.origin || "http://localhost:3000",
-                complete_auto_redirect: true
+                complete_url: ALLOWED_ORIGINS[0] || "http://localhost:3000",
+                cancel_url: ALLOWED_ORIGINS[0] || "http://localhost:3000",
+                complete_auto_redirect: true,
+                custom: giftNickname ? { gift_from: nick, gift_to: giftNickname } : { buyer: nick }
             })
         });
 
         if (!basketRes.ok) {
             const errText = await basketRes.text();
             console.error(`[Tebex] Error creando basket (${basketRes.status}): ${errText}`);
-            return res.status(502).json({ error: "Error creando basket en Tebex" });
+            return res.status(502).json({ error: "Error al procesar la compra. Intenta de nuevo." });
         }
 
         const basketData = await basketRes.json();
@@ -326,43 +473,54 @@ app.post('/api/tebex-checkout', async (req, res) => {
         
         if (!ident) {
             console.error(`[Tebex] Basket sin ident:`, JSON.stringify(basketData));
-            return res.status(502).json({ error: "Basket creado sin ident" });
+            return res.status(502).json({ error: "Error al procesar la compra. Intenta de nuevo." });
         }
         
         console.log(`[Tebex] Basket creado: ${ident}`);
 
+        // Agregar paquetes al basket
         for (const item of cart) {
-            console.log(`[Tebex] Agregando paquete ID ${item.id} x${item.qty || 1}`);
+            console.log(`[Tebex] Agregando paquete ID ${item.id} x${item.qty || 1}${giftNickname ? ` (regalo para ${giftNickname})` : ''}`);
+            
+            const packageBody = { 
+                package_id: item.id, 
+                quantity: item.qty || 1 
+            };
+
+            // Si es un regalo, incluir gift_username según la API de Tebex
+            if (giftNickname) {
+                packageBody.gift_username = giftNickname;
+            }
+
             const addRes = await fetch(`${TEBEX_API_BASE}/baskets/${ident}/packages`, {
                 method: 'POST',
                 headers: tebexHeaders(),
-                body: JSON.stringify({ package_id: item.id, quantity: item.qty || 1 })
+                body: JSON.stringify(packageBody)
             });
             
             if (!addRes.ok) {
                 const addText = await addRes.text();
                 console.error(`[Tebex] Error agregando paquete ${item.id}: ${addText}`);
                 return res.status(502).json({ 
-                    error: `Error agregando producto "${item.name}" al basket. Verifica que existe en Tebex.`,
-                    productId: item.id
+                    error: `Error agregando producto al carrito. Intenta de nuevo.`
                 });
             }
             console.log(`[Tebex] Paquete ${item.id} agregado OK`);
         }
 
         // Aplicar cupón si existe
-        if (coupon && coupon.trim()) {
-            console.log(`[Tebex] Aplicando cupón: ${coupon}`);
+        if (coupon && typeof coupon === 'string' && coupon.trim()) {
+            const sanitizedCoupon = sanitizeString(coupon.trim(), 50);
+            console.log(`[Tebex] Aplicando cupón: ${sanitizedCoupon}`);
             const coupRes = await fetch(`${TEBEX_API_BASE}/accounts/${TEBEX_PUBLIC_TOKEN}/baskets/${ident}/coupons`, {
                 method: 'POST',
                 headers: tebexHeaders(),
-                body: JSON.stringify({ coupon_code: coupon.trim() })
+                body: JSON.stringify({ coupon_code: sanitizedCoupon })
             });
             if (!coupRes.ok) {
-                const errText = await coupRes.text();
-                console.error(`[Tebex] Cupón inválido "${coupon}": ${errText}`);
+                console.error(`[Tebex] Cupón inválido "${sanitizedCoupon}"`);
             } else {
-                console.log(`[Tebex] Cupón "${coupon}" aplicado OK`);
+                console.log(`[Tebex] Cupón "${sanitizedCoupon}" aplicado OK`);
             }
         }
 
@@ -381,33 +539,52 @@ app.post('/api/tebex-checkout', async (req, res) => {
             }
         }
 
-        const manualUrl = `https://checkout.tebex.io/pay/${TEBEX_PUBLIC_TOKEN}?basket=${ident}`;
-        console.log(`[Tebex] Usando URL manual: ${manualUrl}`);
+        const manualUrl = `https://checkout.tebex.io/checkout/${ident}`;
+        console.log(`[Tebex] Usando URL de checkout: ${manualUrl}`);
         res.json({ success: true, ident, url: manualUrl });
         
     } catch (e) {
-        console.error(`[Tebex] Error en checkout:`, e);
-        res.status(500).json({ error: e.message });
+        console.error(`[Tebex] Error en checkout:`, e.message);
+        res.status(500).json({ error: "Error interno. Intenta de nuevo más tarde." });
     }
 });
 
 // 4. Productos reales de Tebex
 app.get('/api/tebex/products', async (req, res) => {
+    if (!checkRateLimit(req, 'general')) {
+        return res.status(429).json({ error: "Demasiadas peticiones." });
+    }
     const products = await fetchTebexProducts();
     res.json({ data: products });
 });
 
 // 5. Compras recientes
-app.get('/api/tebex/recent-purchases', (req, res) => {
-    const limit = parseInt(req.query.limit) || 12;
-    const purchases = getRecentPurchases(limit);
-    res.json({ data: purchases });
+app.get('/api/tebex/recent-purchases', async (req, res) => {
+    if (!checkRateLimit(req, 'general')) {
+        return res.status(429).json({ error: "Demasiadas peticiones." });
+    }
+    try {
+        const limit = Math.min(Math.max(parseInt(req.query.limit) || 12, 1), 50);
+        const purchases = await getRecentPurchases(limit);
+        res.json({ data: purchases });
+    } catch (e) {
+        console.error('[API] Error obteniendo compras recientes:', e.message);
+        res.status(500).json({ error: "Error interno", data: [] });
+    }
 });
 
 // 6. Top comprador
-app.get('/api/tebex/top-buyer', (req, res) => {
-    const top = getTopBuyer();
-    res.json({ data: top });
+app.get('/api/tebex/top-buyer', async (req, res) => {
+    if (!checkRateLimit(req, 'general')) {
+        return res.status(429).json({ error: "Demasiadas peticiones." });
+    }
+    try {
+        const top = await getTopBuyer();
+        res.json({ data: top });
+    } catch (e) {
+        console.error('[API] Error obteniendo top buyer:', e.message);
+        res.status(500).json({ error: "Error interno", data: null });
+    }
 });
 
 // ============================================================
@@ -418,16 +595,25 @@ app.post('/api/tebex-webhook', async (req, res) => {
         const signatureHeader = req.headers['x-signature'];
         const rawBody = req.rawBody;
 
-        if (TEBEX_WEBHOOK_SECRET && signatureHeader && rawBody) {
+        // VERIFICACIÓN ESTRICTA: si hay secret configurado, SIEMPRE verificar firma
+        if (TEBEX_WEBHOOK_SECRET) {
+            if (!signatureHeader) {
+                console.error('[Tebex Webhook] ❌ Falta header X-Signature. Rechazando.');
+                return res.status(401).json({ error: 'Missing signature' });
+            }
+            
+            if (!rawBody) {
+                console.error('[Tebex Webhook] ❌ Sin body raw para verificar firma.');
+                return res.status(401).json({ error: 'Cannot verify signature' });
+            }
+
             const bodyHash = crypto.createHash('sha256').update(rawBody.toString('utf-8')).digest('hex');
             const expectedSignature = crypto.createHmac('sha256', TEBEX_WEBHOOK_SECRET).update(bodyHash).digest('hex');
 
             if (expectedSignature !== signatureHeader) {
-                console.error(`[Tebex Webhook] ❌ Firma inválida. Esperada: ${expectedSignature}, Recibida: ${signatureHeader}`);
+                console.error(`[Tebex Webhook] ❌ Firma inválida.`);
                 return res.status(401).json({ error: 'Invalid signature' });
             }
-        } else if (TEBEX_WEBHOOK_SECRET && !signatureHeader) {
-            console.warn('[Tebex Webhook] ⚠️ No se recibió header X-Signature, pero hay secret configurado. Se omitirá verificación.');
         }
 
         const webhook = req.body;
@@ -455,7 +641,7 @@ app.post('/api/tebex-webhook', async (req, res) => {
 
             const productNames = products.map(p => p.name).join(', ');
             const totalAmount = Number(pricePaid);
-            addPurchase({
+            await addPurchase({
                 nickname: nick,
                 email: email,
                 transactionId: transactionId,
@@ -484,7 +670,6 @@ app.post('/api/tebex-webhook', async (req, res) => {
                     { name: '💰 Total Pagado', value: `**$${Number(pricePaid).toFixed(2)} ${currency}**`, inline: true },
                     { name: '💳 Método de Pago', value: paymentMethod, inline: true },
                     { name: '🌍 País', value: country || 'Desconocido', inline: true },
-                    { name: '📧 Email', value: email || 'No disponible', inline: true },
                     { name: '📦 Productos Comprados', value: products.map(p => `**${p.name}** x${p.quantity} — $${Number(p.paid_price?.amount || 0).toFixed(2)}`).join('\n') || 'N/A' }
                 ],
                 footer: {
@@ -525,7 +710,7 @@ app.post('/api/tebex-webhook', async (req, res) => {
         res.status(200).json({ received: true });
 
     } catch (e) {
-        console.error(`[Tebex Webhook] ❌ Error procesando webhook:`, e);
+        console.error(`[Tebex Webhook] ❌ Error procesando webhook:`, e.message);
         res.status(500).json({ error: 'Internal error' });
     }
 });
