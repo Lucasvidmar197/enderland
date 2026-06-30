@@ -658,10 +658,11 @@ app.post('/api/tebex-webhook', async (req, res) => {
     }
 });
 
-// Para Vercel
-if (process.env.VERCEL) {
-    module.exports = app;
-} else {
+// Exportar siempre para Vercel (serverless)
+module.exports = app;
+
+// Solo escuchar en desarrollo local
+if (!process.env.VERCEL) {
     app.listen(PORT, () => {
         console.log(`🚀 Enderland Survival OP Backend en http://localhost:${PORT}`);
         fetchTebexProducts();

@@ -10,6 +10,10 @@
       "use": "@vercel/static"
     },
     {
+      "src": "admin.html",
+      "use": "@vercel/static"
+    },
+    {
       "src": "js/**",
       "use": "@vercel/static"
     },
@@ -19,6 +23,10 @@
     },
     {
       "src": "css/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "data/**",
       "use": "@vercel/static"
     }
   ],
@@ -38,6 +46,14 @@
     {
       "src": "/css/(.*)",
       "dest": "/css/$1"
+    },
+    {
+      "src": "/data/(.*)",
+      "dest": "/data/$1"
+    },
+    {
+      "src": "/admin\\.html",
+      "dest": "/admin.html"
     },
     {
       "src": "/(.*)",
