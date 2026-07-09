@@ -11,19 +11,36 @@ const TebexManager = {
 
     async loadProducts() {
         try {
-            console.log("Cargando productos de Tebex...");
+            console.log("[Tebex] Cargando productos desde /api/tebex/categories...");
             const res = await fetch('/api/tebex/categories');
-            const data = await res.json();
-            console.log("Datos de Tebex recibidos:", data);
+            console.log("[Tebex] Status:", res.status, res.statusText, "URL:", res.url);
+            const text = await res.text();
+            console.log("[Tebex] Body recibido (primeros 800 chars):", text.substring(0, 800));
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (parseErr) {
+                console.error("[Tebex] ❌ La respuesta NO es JSON válido.");
+                console.error("[Tebex] Status HTTP:", res.status);
+                console.error("[Tebex] URL:", res.url);
+                console.error("[Tebex] Headers:", JSON.stringify([...res.headers.entries()]));
+                console.error("[Tebex] Body completo:", text);
+                console.error("[Tebex] Error de parse:", parseErr.message);
+                return;
+            }
+            console.log("[Tebex] ✅ JSON parseado OK. Keys:", Object.keys(data));
             if (data && data.data) {
                 this.categories = data.data;
                 this.updateCategoryButtons();
                 if (this.categories.length > 0) {
                     this.filterByCategory(this.categories[0].id);
                 }
+            } else {
+                console.warn("[Tebex] data.data está vacío o undefined:", data);
             }
         } catch (e) {
-            console.error("Error loading Tebex products:", e);
+            console.error("[Tebex] ❌ Error loading Tebex products:", e);
+            console.error("[Tebex] Stack:", e.stack);
         }
     },
 
@@ -129,7 +146,6 @@ const TebexManager = {
                         </div>
                     `;
 
-                    // Event listener seguro en vez de inline onclick con string interpolation
                     const addBtn = card.querySelector('.btn-add');
                     addBtn.addEventListener('click', () => {
                         TebexManager.addToCart(pkg.id, pkg.name, pkg.base_price);
@@ -225,7 +241,6 @@ const TebexManager = {
             `;
         }).join('');
 
-        // Bind events de forma segura
         container.querySelectorAll('.cart-qty-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const id = Number(btn.dataset.id);
@@ -327,7 +342,6 @@ const TebexManager = {
             return;
         }
 
-        // Verificar gift
         const isGift = document.getElementById('is-gift')?.checked || false;
         let giftNickname = '';
         if (isGift) {
@@ -359,7 +373,6 @@ const TebexManager = {
                 coupon: this.appliedCoupon
             };
 
-            // Incluir gift si aplica
             if (isGift && giftNickname) {
                 body.giftNickname = giftNickname;
             }
@@ -518,7 +531,6 @@ function enterShop() {
     const safeNick = escapeHtml(nickname);
     const encodedNick = encodeURIComponent(nickname);
 
-    // Actualizar UIs con el nick
     const cartUserDisplay = document.getElementById("cart-username");
     if (cartUserDisplay) cartUserDisplay.textContent = nickname;
 
@@ -528,21 +540,18 @@ function enterShop() {
     const sidebarNickDisplay = document.getElementById("sidebar-username");
     if (sidebarNickDisplay) sidebarNickDisplay.textContent = nickname;
 
-    // Actualizar avatars
     const sidebarAvatar = document.getElementById("sidebar-avatar");
     if (sidebarAvatar) sidebarAvatar.style.backgroundImage = `url('https://minotar.net/helm/${encodedNick}/32.png')`;
 
     const mobileAvatar = document.getElementById("mobile-sidebar-avatar");
     if (mobileAvatar) mobileAvatar.style.backgroundImage = `url('https://minotar.net/helm/${encodedNick}/50.png')`;
 
-    // Cerrar overlay de términos
     const termsOverlay = document.getElementById("terms-overlay");
     if (termsOverlay) {
         termsOverlay.style.opacity = "0";
         setTimeout(() => termsOverlay.style.display = "none", 500);
     }
 
-    // Iniciar carga
     fetchServerStatus();
     TebexManager.init();
     fetchRecentPurchases();
@@ -627,8 +636,10 @@ function fetchRecentPurchases() {
     const section = document.getElementById("section-recent-purchases");
     if (!container) return;
 
+    console.log("[Purchases] GET /api/tebex/recent-purchases");
     fetch("/api/tebex/recent-purchases")
         .then(r => {
+            console.log("[Purchases] Status:", r.status, r.statusText, "URL:", r.url);
             if (!r.ok) throw new Error("HTTP " + r.status);
             return r.json();
         })
@@ -665,7 +676,8 @@ function fetchRecentPurchases() {
             container.innerHTML = html;
         })
         .catch(err => {
-            console.warn("Error fetching recent purchases:", err);
+            console.error("[Purchases] ❌ Error fetching recent purchases:", err);
+            console.error("[Purchases] Stack:", err.stack);
             container.innerHTML = '<div class="top-buyer-empty">No se pudieron cargar las compras.</div>';
         });
 }
@@ -675,8 +687,10 @@ function fetchTopBuyer() {
     const section = document.getElementById("section-top-buyer");
     if (!container) return;
 
+    console.log("[TopBuyer] GET /api/tebex/top-buyer");
     fetch("/api/tebex/top-buyer")
         .then(r => {
+            console.log("[TopBuyer] Status:", r.status, r.statusText, "URL:", r.url);
             if (!r.ok) throw new Error("HTTP " + r.status);
             return r.json();
         })
@@ -704,7 +718,8 @@ function fetchTopBuyer() {
             `;
         })
         .catch(err => {
-            console.warn("Error fetching top buyer:", err);
+            console.error("[TopBuyer] ❌ Error fetching top buyer:", err);
+            console.error("[TopBuyer] Stack:", err.stack);
             container.innerHTML = '<div class="top-buyer-empty">No se pudo cargar el mejor comprador.</div>';
         });
 }
