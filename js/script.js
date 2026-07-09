@@ -100,7 +100,7 @@ const TebexManager = {
 
                 cat.packages.forEach(pkg => {
                     const card = document.createElement("div");
-                    card.className = "card";
+                    card.className = "card card-clickable";
 
                     const safeName = escapeHtml(pkg.name);
                     const rawDesc = pkg.description || '';
@@ -119,7 +119,7 @@ const TebexManager = {
                             <span class="currency-symbol">$</span>${safePrice}
                             <span class="currency-code">${safeCurrency}</span>
                         </div>
-                        ${rawDesc ? `<div class="pkg-description">${sanitizeTebexHtml(rawDesc)}</div>` : ''}
+                        <div class="card-view-hint"><i class="fas fa-eye"></i> Toca para ver detalles</div>
                         <div style="margin-top:auto;">
                             <button class="btn-add" data-pkg-id="${pkg.id}">
                                 <i class="fas fa-shopping-cart"></i> AÑADIR
@@ -127,8 +127,15 @@ const TebexManager = {
                         </div>
                     `;
 
+                    // Abrir el product viewer al tocar la tarjeta (excepto el botón AÑADIR)
+                    card.addEventListener('click', (e) => {
+                        if (e.target.closest('.btn-add')) return;
+                        openProductViewer(pkg);
+                    });
+
                     const addBtn = card.querySelector('.btn-add');
-                    addBtn.addEventListener('click', () => {
+                    addBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
                         TebexManager.addToCart(pkg.id, pkg.name, pkg.base_price);
                     });
 
@@ -783,6 +790,90 @@ function closeKitPreview() {
     const modal = document.getElementById("kit-preview-overlay");
     if (modal) modal.style.display = 'none';
 }
+
+// --- Product Viewer ---
+let currentViewerPkg = null;
+
+function openProductViewer(pkg) {
+    if (!pkg) return;
+    currentViewerPkg = pkg;
+
+    const overlay = document.getElementById('product-viewer-overlay');
+    if (!overlay) return;
+
+    // Nombre
+    const nameEl = document.getElementById('pv-name');
+    if (nameEl) nameEl.textContent = pkg.name || 'Producto';
+
+    // Precio
+    const priceEl = document.getElementById('pv-price');
+    if (priceEl) priceEl.textContent = Number(pkg.base_price || 0).toFixed(2);
+
+    const currencyEl = document.getElementById('pv-currency');
+    if (currencyEl) currencyEl.textContent = pkg.currency || 'USD';
+
+    // Imagen
+    const imgContainer = document.getElementById('pv-image-container');
+    if (imgContainer) {
+        if (pkg.image) {
+            imgContainer.innerHTML = `<img src="${escapeAttr(pkg.image)}" alt="${escapeAttr(pkg.name)}" class="pv-image">`;
+        } else {
+            imgContainer.innerHTML = '<i class="fas fa-gem pv-placeholder-icon"></i>';
+        }
+    }
+
+    // Descripción (HTML sanitizado)
+    const descEl = document.getElementById('pv-description');
+    if (descEl) {
+        if (pkg.description) {
+            descEl.innerHTML = sanitizeTebexHtml(pkg.description);
+            descEl.style.display = 'block';
+        } else {
+            descEl.innerHTML = '<p style="color:var(--text-muted);font-style:italic;">Sin descripción disponible.</p>';
+            descEl.style.display = 'block';
+        }
+    }
+
+    // Botón de compra
+    const buyBtn = document.getElementById('pv-buy-btn');
+    if (buyBtn) {
+        buyBtn.onclick = () => {
+            TebexManager.addToCart(pkg.id, pkg.name, pkg.base_price);
+            closeProductViewer();
+        };
+    }
+
+    // Mostrar modal
+    overlay.style.display = 'flex';
+    setTimeout(() => overlay.classList.add('active'), 10);
+    document.body.style.overflow = 'hidden';
+}
+
+function closeProductViewer() {
+    const overlay = document.getElementById('product-viewer-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('active');
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        document.body.style.overflow = '';
+    }, 300);
+    currentViewerPkg = null;
+}
+
+// Cerrar el product viewer al hacer clic fuera del contenido
+document.addEventListener('click', (e) => {
+    const overlay = document.getElementById('product-viewer-overlay');
+    if (!overlay || overlay.style.display !== 'flex') return;
+    if (e.target === overlay) closeProductViewer();
+});
+
+// Cerrar con tecla ESC
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const overlay = document.getElementById('product-viewer-overlay');
+        if (overlay && overlay.style.display === 'flex') closeProductViewer();
+    }
+});
 
 // --- Auto-refresh purchases ---
 let purchaseRefreshInterval = null;

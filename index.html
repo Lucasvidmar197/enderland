@@ -350,6 +350,37 @@
         </div>
     </div>
 
+    <!-- ============ PRODUCT VIEWER OVERLAY ============ -->
+    <div id="product-viewer-overlay" class="modal" style="z-index:10000;">
+        <div class="modal-content product-viewer-content">
+            <i class="fas fa-times close-modal" onclick="closeProductViewer()"></i>
+            <div class="product-viewer-layout">
+                <div class="product-viewer-image-side">
+                    <div id="pv-image-container" class="pv-image-container">
+                        <i class="fas fa-gem pv-placeholder-icon"></i>
+                    </div>
+                    <div class="pv-price-tag">
+                        <span class="currency-symbol">$</span><span id="pv-price">0.00</span>
+                        <span class="currency-code" id="pv-currency">USD</span>
+                    </div>
+                </div>
+                <div class="product-viewer-info-side">
+                    <h2 id="pv-name" class="pv-name">Nombre del Producto</h2>
+                    <div class="pv-divider"></div>
+                    <div class="pv-description-wrapper">
+                        <h4 class="pv-section-label"><i class="fas fa-align-left"></i> Descripción</h4>
+                        <div id="pv-description" class="pkg-description pv-description"></div>
+                    </div>
+                    <div class="pv-actions">
+                        <button id="pv-buy-btn" class="btn-accept pv-buy-btn">
+                            <i class="fas fa-shopping-cart"></i> AÑADIR AL CARRITO
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ============ CHATBOT ============ -->
     <div id="chatbot-float" style="position:fixed;bottom:95px;right:30px;background:var(--primary);width:48px;height:48px;border-radius:50%;display:flex;justify-content:center;align-items:center;font-size:1.3rem;box-shadow:0 4px 20px rgba(157,0,255,0.3);cursor:pointer;z-index:200;transition:0.3s;" onclick="toggleChat()">
         <i class="fas fa-robot"></i>

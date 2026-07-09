@@ -845,6 +845,218 @@ body::before {
 
 .pkg-description br { display: block; margin: 2px 0; }
 
+/* ───── CARD CLICKABLE HINT ───── */
+.card-clickable {
+    cursor: pointer;
+}
+
+.card-view-hint {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    margin-bottom: 8px;
+    opacity: 0.6;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.card:hover .card-view-hint {
+    opacity: 1;
+    color: var(--primary-light);
+}
+
+/* ───── PRODUCT VIEWER MODAL ───── */
+.product-viewer-content {
+    max-width: 780px !important;
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+.product-viewer-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: 480px;
+}
+
+.product-viewer-image-side {
+    background: linear-gradient(160deg, rgba(157,0,255,0.12), rgba(0,212,255,0.04));
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    border-right: 1px solid var(--border-color);
+    position: relative;
+}
+
+.product-viewer-image-side::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+}
+
+.pv-image-container {
+    width: 180px;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(157,0,255,0.08);
+    border-radius: 24px;
+    border: 2px solid rgba(157,0,255,0.2);
+    box-shadow: 0 8px 30px rgba(157,0,255,0.2);
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.pv-image-container:hover {
+    transform: scale(1.03);
+    box-shadow: 0 12px 40px rgba(157,0,255,0.35);
+}
+
+.pv-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.pv-placeholder-icon {
+    font-size: 4rem;
+    color: var(--primary);
+    opacity: 0.5;
+}
+
+.pv-price-tag {
+    font-size: 2rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--primary-light), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+}
+
+.pv-price-tag .currency-symbol {
+    font-size: 1.1rem;
+    opacity: 0.7;
+}
+
+.pv-price-tag .currency-code {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-left: 4px;
+    -webkit-text-fill-color: var(--text-muted);
+}
+
+.product-viewer-info-side {
+    padding: 28px 28px 24px;
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.pv-name {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.pv-divider {
+    height: 1px;
+    background: linear-gradient(90deg, var(--primary), transparent);
+    margin: 14px 0 18px;
+    opacity: 0.4;
+}
+
+.pv-section-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--primary-light);
+    margin: 0 0 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pv-description-wrapper {
+    flex: 1;
+    margin-bottom: 18px;
+}
+
+.pv-description {
+    max-height: 280px;
+    margin-bottom: 0;
+}
+
+.pv-actions {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.pv-buy-btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+@media (max-width: 700px) {
+    .product-viewer-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .product-viewer-image-side {
+        padding: 24px 20px;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .pv-image-container {
+        width: 130px;
+        height: 130px;
+    }
+
+    .pv-placeholder-icon {
+        font-size: 3rem;
+    }
+
+    .pv-price-tag {
+        font-size: 1.6rem;
+    }
+
+    .product-viewer-info-side {
+        padding: 20px;
+        max-height: none;
+    }
+
+    .pv-name {
+        font-size: 1.2rem;
+    }
+
+    .pv-description {
+        max-height: 200px;
+    }
+}
+
 /* ───── CART FLOAT ───── */
 .cart-float {
     position: fixed;
