@@ -740,6 +740,111 @@ body::before {
     box-shadow: 0 6px 25px rgba(157,0,255,0.3);
 }
 
+/* ───── PACKAGE DESCRIPTION (Tebex HTML) ───── */
+.pkg-description {
+    width: 100%;
+    text-align: left;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.02);
+    border-radius: var(--radius-sm);
+    border-left: 2px solid rgba(157,0,255,0.3);
+    max-height: 220px;
+    overflow-y: auto;
+    word-wrap: break-word;
+}
+
+.pkg-description::-webkit-scrollbar { width: 4px; }
+.pkg-description::-webkit-scrollbar-thumb { background: rgba(157,0,255,0.25); border-radius: 10px; }
+
+.pkg-description h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 8px 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(157,0,255,0.15);
+}
+
+.pkg-description h4 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 10px 0 6px 0;
+}
+
+.pkg-description h5 {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 8px 0 4px 0;
+}
+
+.pkg-description p {
+    margin: 0 0 8px 0;
+    color: var(--text-secondary);
+}
+
+.pkg-description p:last-child { margin-bottom: 0; }
+
+.pkg-description strong,
+.pkg-description b {
+    color: #fff;
+    font-weight: 700;
+}
+
+.pkg-description em,
+.pkg-description i {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.pkg-description ul,
+.pkg-description ol {
+    margin: 6px 0 10px 0;
+    padding-left: 18px;
+    list-style: none;
+}
+
+.pkg-description ul li,
+.pkg-description ol li {
+    position: relative;
+    padding: 4px 0 4px 14px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.pkg-description ul li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--primary);
+    font-size: 0.7rem;
+}
+
+.pkg-description ol {
+    counter-reset: pkg-ol;
+}
+
+.pkg-description ol li {
+    counter-increment: pkg-ol;
+    padding-left: 22px;
+}
+
+.pkg-description ol li::before {
+    content: counter(pkg-ol);
+    position: absolute;
+    left: 0;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.75rem;
+}
+
+.pkg-description br { display: block; margin: 2px 0; }
+
 /* ───── CART FLOAT ───── */
 .cart-float {
     position: fixed;

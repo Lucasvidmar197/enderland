@@ -11,36 +11,17 @@ const TebexManager = {
 
     async loadProducts() {
         try {
-            console.log("[Tebex] Cargando productos desde /api/tebex/categories...");
             const res = await fetch('/api/tebex/categories');
-            console.log("[Tebex] Status:", res.status, res.statusText, "URL:", res.url);
-            const text = await res.text();
-            console.log("[Tebex] Body recibido (primeros 800 chars):", text.substring(0, 800));
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (parseErr) {
-                console.error("[Tebex] ❌ La respuesta NO es JSON válido.");
-                console.error("[Tebex] Status HTTP:", res.status);
-                console.error("[Tebex] URL:", res.url);
-                console.error("[Tebex] Headers:", JSON.stringify([...res.headers.entries()]));
-                console.error("[Tebex] Body completo:", text);
-                console.error("[Tebex] Error de parse:", parseErr.message);
-                return;
-            }
-            console.log("[Tebex] ✅ JSON parseado OK. Keys:", Object.keys(data));
+            const data = await res.json();
             if (data && data.data) {
                 this.categories = data.data;
                 this.updateCategoryButtons();
                 if (this.categories.length > 0) {
                     this.filterByCategory(this.categories[0].id);
                 }
-            } else {
-                console.warn("[Tebex] data.data está vacío o undefined:", data);
             }
         } catch (e) {
-            console.error("[Tebex] ❌ Error loading Tebex products:", e);
-            console.error("[Tebex] Stack:", e.stack);
+            console.error("Error loading Tebex products:", e);
         }
     },
 
@@ -122,7 +103,7 @@ const TebexManager = {
                     card.className = "card";
 
                     const safeName = escapeHtml(pkg.name);
-                    const safeDesc = pkg.description ? escapeHtml(pkg.description) : '';
+                    const rawDesc = pkg.description || '';
                     const safeImg = pkg.image ? escapeAttr(pkg.image) : '';
                     const safePrice = Number(pkg.base_price).toFixed(2);
                     const safeCurrency = escapeHtml(pkg.currency || 'USD');
@@ -138,7 +119,7 @@ const TebexManager = {
                             <span class="currency-symbol">$</span>${safePrice}
                             <span class="currency-code">${safeCurrency}</span>
                         </div>
-                        ${safeDesc ? `<p style="color:#999;font-size:0.82rem;margin-bottom:14px;line-height:1.5;">${safeDesc}</p>` : ''}
+                        ${rawDesc ? `<div class="pkg-description">${sanitizeTebexHtml(rawDesc)}</div>` : ''}
                         <div style="margin-top:auto;">
                             <button class="btn-add" data-pkg-id="${pkg.id}">
                                 <i class="fas fa-shopping-cart"></i> AÑADIR
@@ -462,6 +443,37 @@ function escapeAttr(str) {
         .replace(/>/g, '>');
 }
 
+// Sanitiza HTML de descripciones de Tebex: permite solo etiquetas seguras
+// y elimina cualquier atributo peligroso (onclick, onerror, style, etc.)
+function sanitizeTebexHtml(html) {
+    if (!html) return "";
+    const allowedTags = ['h3', 'h4', 'h5', 'p', 'ul', 'ol', 'li', 'strong', 'b', 'em', 'i', 'u', 'br', 'span', 'div'];
+    const div = document.createElement('div');
+    div.innerHTML = html;
+
+    const walk = (node) => {
+        const children = Array.from(node.childNodes);
+        children.forEach(child => {
+            if (child.nodeType === 1) { // Element node
+                const tag = child.tagName.toLowerCase();
+                if (!allowedTags.includes(tag)) {
+                    // Reemplazar el nodo no permitido por su contenido de texto
+                    const text = document.createTextNode(child.textContent);
+                    child.parentNode.replaceChild(text, child);
+                } else {
+                    // Limpiar todos los atributos del nodo permitido
+                    const attrs = Array.from(child.attributes);
+                    attrs.forEach(attr => child.removeAttribute(attr.name));
+                    walk(child); // Recursivo
+                }
+            }
+        });
+    };
+
+    walk(div);
+    return div.innerHTML;
+}
+
 function showToast(msg) {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -636,10 +648,8 @@ function fetchRecentPurchases() {
     const section = document.getElementById("section-recent-purchases");
     if (!container) return;
 
-    console.log("[Purchases] GET /api/tebex/recent-purchases");
     fetch("/api/tebex/recent-purchases")
         .then(r => {
-            console.log("[Purchases] Status:", r.status, r.statusText, "URL:", r.url);
             if (!r.ok) throw new Error("HTTP " + r.status);
             return r.json();
         })
@@ -676,8 +686,7 @@ function fetchRecentPurchases() {
             container.innerHTML = html;
         })
         .catch(err => {
-            console.error("[Purchases] ❌ Error fetching recent purchases:", err);
-            console.error("[Purchases] Stack:", err.stack);
+            console.warn("Error fetching recent purchases:", err);
             container.innerHTML = '<div class="top-buyer-empty">No se pudieron cargar las compras.</div>';
         });
 }
@@ -687,10 +696,8 @@ function fetchTopBuyer() {
     const section = document.getElementById("section-top-buyer");
     if (!container) return;
 
-    console.log("[TopBuyer] GET /api/tebex/top-buyer");
     fetch("/api/tebex/top-buyer")
         .then(r => {
-            console.log("[TopBuyer] Status:", r.status, r.statusText, "URL:", r.url);
             if (!r.ok) throw new Error("HTTP " + r.status);
             return r.json();
         })
@@ -718,8 +725,7 @@ function fetchTopBuyer() {
             `;
         })
         .catch(err => {
-            console.error("[TopBuyer] ❌ Error fetching top buyer:", err);
-            console.error("[TopBuyer] Stack:", err.stack);
+            console.warn("Error fetching top buyer:", err);
             container.innerHTML = '<div class="top-buyer-empty">No se pudo cargar el mejor comprador.</div>';
         });
 }
