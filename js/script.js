@@ -16,8 +16,10 @@ const TebexManager = {
             if (data && data.data) {
                 this.categories = data.data;
                 this.updateCategoryButtons();
-                if (this.categories.length > 0) {
-                    this.filterByCategory(this.categories[0].id);
+                // Solo mostrar categorías padre (sin parent) como botones principales
+                const topLevelCategories = this.categories.filter(cat => !cat.parent);
+                if (topLevelCategories.length > 0) {
+                    this.filterByCategory(topLevelCategories[0].id);
                 }
             }
         } catch (e) {
@@ -30,7 +32,20 @@ const TebexManager = {
         if (!wrapper) return;
 
         wrapper.innerHTML = '';
-        this.categories.forEach(cat => {
+        
+        // Identificar IDs que son subcategorías (vienen dentro de cat.subcategories o tienen parent)
+        const subcatIds = new Set();
+        this.categories.forEach(c => {
+            if (c.parent) subcatIds.add(c.id);
+            if (c.subcategories) {
+                c.subcategories.forEach(sub => subcatIds.add(sub.id));
+            }
+        });
+
+        // Solo mostrar categorías padre
+        const topLevelCategories = this.categories.filter(cat => !subcatIds.has(cat.id));
+        
+        topLevelCategories.forEach(cat => {
             const btn = document.createElement('button');
             btn.className = 'cat-btn';
 
@@ -64,8 +79,18 @@ const TebexManager = {
 
     renderAllProducts(filterCatId = null) {
         document.querySelectorAll('#survival-op-sections .products-grid').forEach(g => g.innerHTML = '');
+        
+        // Identificar subcategorías
+        const subcatIds = new Set();
+        this.categories.forEach(c => {
+            if (c.parent) subcatIds.add(c.id);
+            if (c.subcategories) c.subcategories.forEach(sub => subcatIds.add(sub.id));
+        });
 
-        this.categories.forEach(cat => {
+        // Solo procesar categorías padre
+        const topLevelCategories = this.categories.filter(cat => !subcatIds.has(cat.id));
+        
+        topLevelCategories.forEach(cat => {
             if (filterCatId && cat.id !== filterCatId) return;
 
             let gridId = '';
@@ -88,22 +113,21 @@ const TebexManager = {
             }
 
             const container = document.getElementById(gridId);
-            if (!container) {
-                console.warn("No se encontró el contenedor HTML con ID:", gridId);
-                return;
-            }
+            if (!container) return;
 
             const grid = container.querySelector('.products-grid');
+            if (!grid) return;
 
-            if (cat.packages && grid) {
-                container.style.display = 'block';
+            container.style.display = 'block';
 
-                cat.packages.forEach(pkg => {
+            // Función auxiliar para renderizar paquetes
+            const renderPackages = (packages, parentElement) => {
+                if (!packages || packages.length === 0) return;
+                packages.forEach(pkg => {
                     const card = document.createElement("div");
                     card.className = "card card-clickable";
 
                     const safeName = escapeHtml(pkg.name);
-                    const rawDesc = pkg.description || '';
                     const safeImg = pkg.image ? escapeAttr(pkg.image) : '';
                     const safePrice = Number(pkg.base_price).toFixed(2);
                     const safeCurrency = escapeHtml(pkg.currency || 'USD');
@@ -127,7 +151,6 @@ const TebexManager = {
                         </div>
                     `;
 
-                    // Abrir el product viewer al tocar la tarjeta (excepto el botón AÑADIR)
                     card.addEventListener('click', (e) => {
                         if (e.target.closest('.btn-add')) return;
                         openProductViewer(pkg);
@@ -139,9 +162,37 @@ const TebexManager = {
                         TebexManager.addToCart(pkg.id, pkg.name, pkg.base_price);
                     });
 
-                    grid.appendChild(card);
+                    parentElement.appendChild(card);
                 });
-            }
+            };
+
+            // Renderizar paquetes de la categoría principal
+            renderPackages(cat.packages, grid);
+
+            // Recopilar subcategorías (de cat.subcategories o de la lista plana con parent.id)
+            let subcategories = cat.subcategories ? [...cat.subcategories] : [];
+            const flatSubs = this.categories.filter(sub => sub.parent && sub.parent.id === cat.id);
+            flatSubs.forEach(fs => {
+                if (!subcategories.find(s => s.id === fs.id)) subcategories.push(fs);
+            });
+
+            // Renderizar subcategorías separadas
+            subcategories.forEach(sub => {
+                if (!sub.packages || sub.packages.length === 0) return;
+                
+                // Crear un separador o título para la subcategoría
+                const subTitle = document.createElement("div");
+                subTitle.style.width = '100%';
+                subTitle.style.gridColumn = '1 / -1';
+                subTitle.style.marginTop = '20px';
+                subTitle.style.marginBottom = '15px';
+                subTitle.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+                subTitle.style.paddingBottom = '5px';
+                subTitle.innerHTML = `<h3 style="color: var(--primary);"><i class="fas fa-level-down-alt"></i> ${escapeHtml(sub.name)}</h3>`;
+                grid.appendChild(subTitle);
+
+                renderPackages(sub.packages, grid);
+            });
         });
     },
 
@@ -778,8 +829,16 @@ function toggleGiftInput() {
 
 // --- Navigation ---
 function resetNavigation() {
-    if (TebexManager.categories.length > 0) {
-        TebexManager.filterByCategory(TebexManager.categories[0].id);
+    // Identificar subcategorías para excluirlas
+    const subcatIds = new Set();
+    TebexManager.categories.forEach(c => {
+        if (c.parent) subcatIds.add(c.id);
+        if (c.subcategories) c.subcategories.forEach(sub => subcatIds.add(sub.id));
+    });
+
+    const topLevelCategories = TebexManager.categories.filter(cat => !subcatIds.has(cat.id));
+    if (topLevelCategories.length > 0) {
+        TebexManager.filterByCategory(topLevelCategories[0].id);
         document.querySelectorAll('.cat-btn').forEach((btn, i) => {
             btn.classList.toggle('active', i === 0);
         });

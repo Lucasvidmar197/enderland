@@ -757,8 +757,10 @@ body::before {
     word-wrap: break-word;
 }
 
-.pkg-description::-webkit-scrollbar { width: 4px; }
-.pkg-description::-webkit-scrollbar-thumb { background: rgba(157,0,255,0.25); border-radius: 10px; }
+.pkg-description::-webkit-scrollbar { width: 6px; }
+.pkg-description::-webkit-scrollbar-track { background: transparent; }
+.pkg-description::-webkit-scrollbar-thumb { background: rgba(157,0,255,0.3); border-radius: 10px; }
+.pkg-description::-webkit-scrollbar-thumb:hover { background: rgba(157,0,255,0.5); }
 
 .pkg-description h3 {
     font-size: 0.95rem;
@@ -965,6 +967,11 @@ body::before {
     max-height: 80vh;
     overflow-y: auto;
 }
+
+.product-viewer-info-side::-webkit-scrollbar { width: 6px; }
+.product-viewer-info-side::-webkit-scrollbar-track { background: transparent; }
+.product-viewer-info-side::-webkit-scrollbar-thumb { background: rgba(157,0,255,0.3); border-radius: 10px; }
+.product-viewer-info-side::-webkit-scrollbar-thumb:hover { background: rgba(157,0,255,0.5); }
 
 .pv-name {
     font-size: 1.5rem;
