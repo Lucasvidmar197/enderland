@@ -505,7 +505,10 @@ function escapeAttr(str) {
 // y elimina cualquier atributo peligroso (onclick, onerror, style, etc.)
 function sanitizeTebexHtml(html) {
     if (!html) return "";
-    const allowedTags = ['h3', 'h4', 'h5', 'p', 'ul', 'ol', 'li', 'strong', 'b', 'em', 'i', 'u', 'br', 'span', 'div'];
+    const allowedTags = [
+        'h3', 'h4', 'h5', 'p', 'ul', 'ol', 'li', 'strong', 'b', 'em', 'i', 'u', 'br', 'span', 'div',
+        'table', 'thead', 'tbody', 'tr', 'th', 'td', 'code'
+    ];
     const div = document.createElement('div');
     div.innerHTML = html;
 
@@ -519,9 +522,14 @@ function sanitizeTebexHtml(html) {
                     const text = document.createTextNode(child.textContent);
                     child.parentNode.replaceChild(text, child);
                 } else {
-                    // Limpiar todos los atributos del nodo permitido
+                    // Limpiar todos los atributos del nodo permitido, excepto style, colspan, rowspan
                     const attrs = Array.from(child.attributes);
-                    attrs.forEach(attr => child.removeAttribute(attr.name));
+                    attrs.forEach(attr => {
+                        const attrName = attr.name.toLowerCase();
+                        if (attrName !== 'style' && attrName !== 'colspan' && attrName !== 'rowspan') {
+                            child.removeAttribute(attr.name);
+                        }
+                    });
                     walk(child); // Recursivo
                 }
             }
